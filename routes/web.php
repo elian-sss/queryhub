@@ -18,12 +18,7 @@ use Inertia\Inertia;
 */
 
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
+    return redirect()->route('login');
 });
 
 Route::get('/dashboard', function () {
@@ -35,8 +30,13 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::get('/connections', [ConnectionController::class, 'index'])->name('connections.index');
-    Route::post('/connections', [ConnectionController::class, 'store'])->name('connections.store');
+    Route::middleware('role:Administrator')->group(function () {
+        Route::get('/connections', [ConnectionController::class, 'index'])->name('connections.index');
+        Route::post('/connections', [ConnectionController::class, 'store'])->name('connections.store');
+        Route::patch('/connections/{connection}', [ConnectionController::class, 'update'])->name('connections.update');
+        Route::delete('/connections/{connection}', [ConnectionController::class, 'destroy'])->name('connections.destroy');
+
+    });
 });
 
 require __DIR__.'/auth.php';
