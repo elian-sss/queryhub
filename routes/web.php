@@ -1,8 +1,11 @@
 <?php
 
 use App\Http\Controllers\ConnectionController;
+use App\Http\Controllers\DatabaseController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TableController;
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -22,7 +25,16 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
+
+    $user = Auth::user()->load('connections');
+
+    return Inertia::render('Dashboard', [
+        'userConnections' => $user->connections->map(fn($conn) => [
+            'id' => $conn->id,
+            'name' => $conn->name,
+        ])
+    ]);
+
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
@@ -37,6 +49,14 @@ Route::middleware('auth')->group(function () {
         Route::delete('/connections/{connection}', [ConnectionController::class, 'destroy'])->name('connections.destroy');
 
     });
+
+    Route::get('/connections/{connection}/databases', [DatabaseController::class, 'index'])
+        ->name('databases.index');
+
+    Route::get('/connections/{connection}/databases/{databaseName}/tables', [TableController::class, 'index'])
+        ->name('tables.index');
+    Route::get('/connections/{connection}/databases/{databaseName}/tables/{tableName}', [TableController::class, 'showData'])
+        ->name('tables.data');
 });
 
 require __DIR__.'/auth.php';
