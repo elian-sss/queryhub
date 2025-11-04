@@ -28,98 +28,74 @@ O diferencial do QueryHub é seu sistema de permissões, onde um Administrador c
 * **Banco de Dados (Aplicação):** MySQL / MariaDB
 * **Bancos de Dados (Gerenciados):** MySQL / MariaDB
 
------
+---
 
 ## Instalação e Configuração Local
 
 Siga estes passos para rodar o QueryHub em sua máquina local.
 
-### 1\. Pré-requisitos
-
-Certifique-se de que seu ambiente de desenvolvimento possui:
+### 1. Pré-requisitos
 
 * **PHP 8.2** (exatamente)
 * **Composer**
 * **Node.js** (v18+) e **NPM**
-* Um servidor de banco de dados **MySQL** ou **MariaDB** (para o *próprio* QueryHub)
+* Um servidor de banco de dados **MySQL** ou **MariaDB**
 
-### 2\. Passo a Passo
+### 2. Instalação (Método Rápido)
+
+Este método usa um script PHP para automatizar a maior parte da configuração.
 
 1.  **Clonar o Repositório**
-
     ```bash
     git clone https://github.com/elian-sss/queryhub queryhub
     cd queryhub
     ```
 
-2.  **Instalar Dependências do PHP**
-
+2.  **Instalar Dependências do PHP (Obrigatório)**
+    O script de setup precisa dos pacotes do Composer para rodar.
     ```bash
     composer install
     ```
 
-    *(Opcional: Se você tiver o PHP 8.3 instalado globalmente, mas quiser usar o 8.2, pode ser necessário especificar: `php8.2 /usr/bin/composer install`)*
-
-3.  **Configurar Arquivo de Ambiente**
-
+3.  **Configurar Arquivo de Ambiente (Obrigatório)**
+    Copie o arquivo de exemplo.
     ```bash
     cp .env.example .env
     ```
 
-4.  **Gerar Chave da Aplicação**
-
-    ```bash
-    php artisan key:generate
-    ```
-
-5.  **Configurar o `.env`**
-    Abra o arquivo `.env` e configure a conexão com o banco de dados que **o QueryHub irá usar** para armazenar seus próprios usuários e conexões:
-
+4.  **EDITAR O `.env` (Obrigatório)**
+    Abra o arquivo `.env` que você acabou de criar e **configure suas credenciais de banco de dados**:
     ```dotenv
     DB_CONNECTION=mysql
     DB_HOST=127.0.0.1
     DB_PORT=3306
-    DB_DATABASE=queryhub_app    # Sugestão de nome
+    DB_DATABASE=queryhub_app
     DB_USERNAME=root
-    DB_PASSWORD=             # Senha do seu banco local
+    DB_PASSWORD=             # Sua senha do banco
     ```
 
-6.  **Rodar as Migrations**
-    Isso criará as tabelas `users`, `connections`, `connection_user`, etc.
-
+5.  **Executar o Script de Setup**
+    Este comando fará o resto: gerar a `APP_KEY`, criar o banco, rodar as migrações e criar o usuário admin.
     ```bash
-    php artisan migrate
+    php setup.php
     ```
 
-6.  **Rodar o Seeder**
-    Isso populará as tabelas `users`, `connections`, `connection_user`, etc.
-
-    ```bash
-    php artisan db:seed
-    ```
-
-7.  **Instalar Dependências do Node.js**
-
+6.  **Instalar Dependências do Node.js**
     ```bash
     npm install
     ```
 
-8.  **Rodar os Servidores de Desenvolvimento**
-    Você precisará de dois terminais abertos:
+7.  **Rodar os Servidores de Desenvolvimento**
+    * Terminal 1: `npm run dev`
+    * Terminal 2: `php artisan serve`
 
-    * **Terminal 1 (Vite Frontend):**
-      ```bash
-      npm run dev
-      ```
-    * **Terminal 2 (Laravel Backend):**
-      ```bash
-      php artisan serve
-      ```
+8.  **Pronto!** Você pode fazer login diretamente com:
+    * **Usuário:** `admin@admin.com`
+    * **Senha:** `password`
 
 ## Uso Básico (Pós-Instalação)
 
-1.  **Login:** Faça login com o usuário `admin@admin.com` e senha `password`.
-2.  **Criar Conexão:** No menu de navegação, clique em **Conexões** (o link só aparece para Admins).
-3.  **Formulário:** Preencha o formulário para adicionar uma nova conexão (ex: aponte para outro banco de dados de teste que você tenha na sua máquina, como `127.0.0.1`, `root`, `sua_senha`).
-4.  **Acessar o Dashboard:** Clique em **Dashboard**.
-5.  **Navegar:** A conexão que você criou aparecerá automaticamente na sidebar da esquerda (graças à lógica de auto-atribuição para Admins). Clique nela para começar a navegar pelos bancos, tabelas e dados.
+1.  **Login:** Faça login com o usuário Admin.
+2.  **Criar Conexão:** No menu de navegação, clique em **Conexões**.
+3.  **Formulário:** Preencha o formulário para adicionar uma nova conexão de teste.
+4.  **Acessar o Dashboard:** Clique em **Dashboard**. A nova conexão aparecerá automaticamente.
