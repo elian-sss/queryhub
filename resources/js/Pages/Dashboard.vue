@@ -1,21 +1,34 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
+import { computed } from 'vue'; // Importar computed
 
-defineProps({
+// Definindo todas as props que a página pode receber
+const props = defineProps({
     userConnections: Array,
     selectedConnectionId: { type: Number, default: null },
     databases: { type: Array, default: () => [] },
     selectedDatabaseName: { type: String, default: null },
     tables: { type: Array, default: () => [] },
-    selectedTableName: { type: String, default: null }, // Novo
-    tableData: { // Novo
+    selectedTableName: { type: String, default: null },
+    tableData: {
         type: Object,
-        default: () => ({ columns: [], rows: [] })
+        // O valor padrão agora inclui a estrutura do paginador
+        default: () => ({
+            columns: [],
+            rowsPaginator: {
+                data: [],
+                links: [],
+                from: 0,
+                to: 0,
+                total: 0
+            }
+        })
     },
     connectionError: { type: String, default: null },
 });
 
+// Helper para truncar dados longos na tabela
 const truncate = (value, length = 50) => {
     if (value === null) return 'NULL';
     if (value === undefined) return '...';
@@ -27,6 +40,10 @@ const truncate = (value, length = 50) => {
     return str;
 };
 
+// Computar se a tabela tem dados, checando o paginador
+const hasRows = computed(() => {
+    return props.tableData.rowsPaginator && props.tableData.rowsPaginator.data.length > 0;
+});
 </script>
 
 <template>
@@ -58,6 +75,9 @@ const truncate = (value, length = 50) => {
                         </Link>
                     </li>
                 </ul>
+                <p v-else class="text-sm text-gray-500 dark:text-gray-400">
+                    Nenhuma conexão foi atribuída a você.
+                </p>
             </nav>
 
             <div class="w-72 bg-gray-100 dark:bg-gray-800/50 border-r dark:border-gray-700 p-4 overflow-y-auto flex-shrink-0">
@@ -77,6 +97,9 @@ const truncate = (value, length = 50) => {
                         </Link>
                     </li>
                 </ul>
+                <p v-else-if="selectedConnectionId && !connectionError" class="text-sm text-gray-500 dark:text-gray-400">
+                    Nenhum banco encontrado.
+                </p>
             </div>
 
             <div class="w-72 bg-gray-50 dark:bg-gray-800 border-r dark:border-gray-700 p-4 overflow-y-auto flex-shrink-0">
@@ -91,11 +114,16 @@ const truncate = (value, length = 50) => {
                                 'bg-green-100 dark:bg-green-900 font-bold text-green-700 dark:text-green-300': table === selectedTableName,
                                 'block p-2 rounded font-mono text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700': true
                             }"
+                            preserve-scroll
+                            preserve-state
                         >
                             {{ table }}
                         </Link>
                     </li>
                 </ul>
+                <p v-else-if="selectedDatabaseName && !connectionError" class="text-sm text-gray-500 dark:text-gray-400">
+                    Nenhuma tabela encontrada.
+                </p>
             </div>
 
             <main class="flex-1 p-6 bg-gray-100 dark:bg-gray-900 overflow-y-auto">
@@ -110,7 +138,7 @@ const truncate = (value, length = 50) => {
                         Mostrando dados de <span class="text-green-600 font-mono">{{ selectedTableName }}</span>
                     </h2>
 
-                    <div v-if="tableData.rows.length > 0" class="w-full overflow-x-auto bg-white dark:bg-gray-800 shadow rounded-lg">
+                    <div v-if="hasRows" class="w-full overflow-x-auto bg-white dark:bg-gray-800 shadow rounded-lg">
                         <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                             <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                             <tr>
@@ -120,7 +148,7 @@ const truncate = (value, length = 50) => {
                             </tr>
                             </thead>
                             <tbody>
-                            <tr v-for="(row, index) in tableData.rows" :key="index" class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                            <tr v-for="(row, index) in tableData.rowsPaginator.data" :key="index" class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
                                 <td v-for="col in tableData.columns" :key="col" class="px-6 py-4 font-mono">
                                         <span :class="{'text-gray-400 dark:text-gray-500 italic': row[col] === null}">
                                             {{ truncate(row[col]) }}
@@ -133,6 +161,39 @@ const truncate = (value, length = 50) => {
                     <p v-else class="mt-4 text-gray-600 dark:text-gray-400">
                         Tabela vazia.
                     </p>
+
+                    <div v-if="hasRows && tableData.rowsPaginator.links.length > 3" class="mt-6 flex justify-between items-center">
+
+                        <div class="text-sm text-gray-700 dark:text-gray-400">
+                            Mostrando
+                            <span class="font-medium">{{ tableData.rowsPaginator.from }}</span>
+                            a
+                            <span class="font-medium">{{ tableData.rowsPaginator.to }}</span>
+                            de
+                            <span class="font-medium">{{ tableData.rowsPaginator.total }}</span>
+                            resultados
+                        </div>
+
+                        <div class="flex flex-wrap -mb-1">
+                            <template v-for="(link, key) in tableData.rowsPaginator.links" :key="key">
+                                <div
+                                    v-if="!link.url"
+                                    class="mr-1 mb-1 px-4 py-3 text-sm leading-4 text-gray-400 dark:text-gray-600 border rounded bg-white dark:bg-gray-800"
+                                    v-html="link.label"
+                                />
+                                <Link
+                                    v-else
+                                    :href="link.url"
+                                    class="mr-1 mb-1 px-4 py-3 text-sm leading-4 border rounded hover:bg-gray-100 dark:hover:bg-gray-700 focus:border-indigo-500 focus:text-indigo-500"
+                                    :class="{
+                                        'bg-blue-600 text-white dark:bg-blue-700 dark:text-white hover:bg-blue-700': link.active
+                                    }"
+                                    v-html="link.label"
+                                    preserve-scroll
+                                />
+                            </template>
+                        </div>
+                    </div>
                 </div>
 
                 <div v-else-if="!selectedConnectionId">

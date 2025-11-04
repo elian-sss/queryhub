@@ -124,8 +124,9 @@ class TableController extends Controller
             $columnsQuery = $db->select("SHOW COLUMNS FROM `{$tableName}`");
             $tableData['columns'] = collect($columnsQuery)->pluck('Field')->all();
 
-            $limit = 100;
-            $tableData['rows'] = $db->select("SELECT * FROM `{$tableName}` LIMIT {$limit}");
+            $perPage = 100;
+            $tableData['rowsPaginator'] = $db->table($tableName)->paginate($perPage)
+                ->withQueryString();
 
         } catch (\Exception $e) {
             Log::error('Falha na conexão dinâmica (ShowData): ' . $e->getMessage());
