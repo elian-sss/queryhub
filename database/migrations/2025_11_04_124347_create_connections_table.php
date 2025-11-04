@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('host');
             $table->integer('port')->default(3306);
             $table->string('database_user');
-            $table->text('database_password_encrypted');
+            $table->text('database_password_encrypted')->nullable();
             $table->timestamps();
         });
     }

@@ -26,8 +26,22 @@ class Connection extends Model
     protected function databasePassword(): Attribute
     {
         return Attribute::make(
-            get: fn (string $value) => Crypt::decryptString($value),
-            set: fn (string $value) => Crypt::encryptString($value),
+            get: function (?string $value) {
+                if ($value === null) {
+                    return null;
+                }
+                try {
+                    return Crypt::decryptString($value);
+                } catch (\Exception $e) {
+                    return null;
+                }
+            },
+            set: function (?string $value) {
+                if ($value === null || $value === '') {
+                    return null;
+                }
+                return Crypt::encryptString($value);
+            },
         );
     }
 
@@ -35,18 +49,14 @@ class Connection extends Model
     {
         parent::boot();
 
-        static::creating(function ($model) {
-            if (isset($model->attributes['database_password'])) {
+        $attribute_handler = function ($model) {
+            if (array_key_exists('database_password', $model->attributes)) {
                 $model->attributes['database_password_encrypted'] = $model->database_password;
                 unset($model->attributes['database_password']);
             }
-        });
+        };
 
-        static::updating(function ($model) {
-            if (isset($model->attributes['database_password'])) {
-                $model->attributes['database_password_encrypted'] = $model->database_password;
-                unset($model->attributes['database_password']);
-            }
-        });
+        static::creating($attribute_handler);
+        static::updating($attribute_handler);
     }
 }
