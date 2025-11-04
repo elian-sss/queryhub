@@ -1,66 +1,125 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# QueryHub
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+QueryHub é um gerenciador de banco de dados moderno e seguro, baseado na web, construído com Laravel 10 e Vue.js. Ele serve como uma alternativa a ferramentas como o phpMyAdmin, fornecendo uma interface limpa para desenvolvedores interagirem com bancos de dados MySQL/MariaDB.
 
-## About Laravel
+O diferencial do QueryHub é seu sistema de permissões, onde um Administrador central controla quais usuários (Developers) podem acessar quais conexões de banco de dados.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Funcionalidades (Estado Atual)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+* **Autenticação de Usuários:** Sistema completo de login e registro (via Laravel Breeze).
+* **Papéis de Usuário:** Diferenciação entre `Administrator` e `Developer`.
+* **Gerenciamento de Conexões (CRUD Admin):**
+    * Administradores podem criar, listar, atualizar e deletar conexões com bancos de dados externos.
+    * As senhas das conexões são armazenadas de forma segura (criptografadas).
+* **Atribuição Automática para Admins:** Novas conexões são automaticamente atribuídas a todos os usuários `Administrator` existentes.
+* **Navegador de Banco de Dados (Dashboard):**
+    * Layout de 4 colunas: Conexões \> Bancos \> Tabelas \> Dados.
+    * Lista apenas as conexões permitidas para o usuário logado.
+    * Lista os bancos de dados de uma conexão selecionada.
+    * Lista as tabelas de um banco de dados selecionado.
+    * Exibe os dados de uma tabela selecionada com paginação (100 registros por página).
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Stack de Tecnologia
 
-## Learning Laravel
+* **Backend:** PHP 8.2, Laravel 10
+* **Frontend:** Vue.js 3, Inertia.js
+* **Estilização:** Tailwind CSS 3 (com suporte a Light/Dark Mode)
+* **Autenticação:** Laravel Breeze (VILT Stack)
+* **Banco de Dados (Aplicação):** MySQL / MariaDB
+* **Bancos de Dados (Gerenciados):** MySQL / MariaDB
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+-----
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## Instalação e Configuração Local
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Siga estes passos para rodar o QueryHub em sua máquina local.
 
-## Laravel Sponsors
+### 1\. Pré-requisitos
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Certifique-se de que seu ambiente de desenvolvimento possui:
 
-### Premium Partners
+* **PHP 8.2** (exatamente)
+* **Composer**
+* **Node.js** (v18+) e **NPM**
+* Um servidor de banco de dados **MySQL** ou **MariaDB** (para o *próprio* QueryHub)
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+### 2\. Passo a Passo
 
-## Contributing
+1.  **Clonar o Repositório**
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+    ```bash
+    git clone https://github.com/elian-sss/queryhub queryhub
+    cd queryhub
+    ```
 
-## Code of Conduct
+2.  **Instalar Dependências do PHP**
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+    ```bash
+    composer install
+    ```
 
-## Security Vulnerabilities
+    *(Opcional: Se você tiver o PHP 8.3 instalado globalmente, mas quiser usar o 8.2, pode ser necessário especificar: `php8.2 /usr/bin/composer install`)*
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+3.  **Configurar Arquivo de Ambiente**
 
-## License
+    ```bash
+    cp .env.example .env
+    ```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+4.  **Gerar Chave da Aplicação**
+
+    ```bash
+    php artisan key:generate
+    ```
+
+5.  **Configurar o `.env`**
+    Abra o arquivo `.env` e configure a conexão com o banco de dados que **o QueryHub irá usar** para armazenar seus próprios usuários e conexões:
+
+    ```dotenv
+    DB_CONNECTION=mysql
+    DB_HOST=127.0.0.1
+    DB_PORT=3306
+    DB_DATABASE=queryhub_app    # Sugestão de nome
+    DB_USERNAME=root
+    DB_PASSWORD=             # Senha do seu banco local
+    ```
+
+6.  **Rodar as Migrations**
+    Isso criará as tabelas `users`, `connections`, `connection_user`, etc.
+
+    ```bash
+    php artisan migrate
+    ```
+
+6.  **Rodar o Seeder**
+    Isso populará as tabelas `users`, `connections`, `connection_user`, etc.
+
+    ```bash
+    php artisan db:seed
+    ```
+
+7.  **Instalar Dependências do Node.js**
+
+    ```bash
+    npm install
+    ```
+
+8.  **Rodar os Servidores de Desenvolvimento**
+    Você precisará de dois terminais abertos:
+
+    * **Terminal 1 (Vite Frontend):**
+      ```bash
+      npm run dev
+      ```
+    * **Terminal 2 (Laravel Backend):**
+      ```bash
+      php artisan serve
+      ```
+
+## Uso Básico (Pós-Instalação)
+
+1.  **Login:** Faça login com o usuário `admin@admin.com` e senha `password`.
+2.  **Criar Conexão:** No menu de navegação, clique em **Conexões** (o link só aparece para Admins).
+3.  **Formulário:** Preencha o formulário para adicionar uma nova conexão (ex: aponte para outro banco de dados de teste que você tenha na sua máquina, como `127.0.0.1`, `root`, `sua_senha`).
+4.  **Acessar o Dashboard:** Clique em **Dashboard**.
+5.  **Navegar:** A conexão que você criou aparecerá automaticamente na sidebar da esquerda (graças à lógica de auto-atribuição para Admins). Clique nela para começar a navegar pelos bancos, tabelas e dados.
