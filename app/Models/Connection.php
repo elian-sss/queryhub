@@ -45,10 +45,14 @@ class Connection extends Model
         );
     }
 
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'connection_user');
+    }
+
     protected static function boot()
     {
         parent::boot();
-
         $attribute_handler = function ($model) {
             if (array_key_exists('database_password', $model->attributes)) {
                 $model->attributes['database_password_encrypted'] = $model->database_password;
@@ -58,5 +62,14 @@ class Connection extends Model
 
         static::creating($attribute_handler);
         static::updating($attribute_handler);
+
+        static::created(function ($connection) {
+
+            $adminUserIds = User::where('role', 'Administrator')->pluck('id');
+
+            if ($adminUserIds->isNotEmpty()) {
+                $connection->users()->attach($adminUserIds);
+            }
+        });
     }
 }
