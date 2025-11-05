@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ConnectionController;
+use App\Http\Controllers\ConnectionPermissionController;
 use App\Http\Controllers\DatabaseController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TableController;
@@ -57,6 +58,11 @@ Route::middleware('auth')->group(function () {
         ->name('tables.index');
     Route::get('/connections/{connection}/databases/{databaseName}/tables/{tableName}', [TableController::class, 'showData'])
         ->name('tables.data');
+
+    Route::get('/connections/{connection}/permissions', [ConnectionPermissionController::class, 'edit'])
+            ->name('connections.permissions.edit');
+    Route::patch('/connections/{connection}/permissions', [ConnectionPermissionController::class, 'update'])
+            ->name('connections.permissions.update');
 });
 
 require __DIR__.'/auth.php';

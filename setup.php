@@ -37,14 +37,14 @@ if (!file_exists($basePath . '/artisan')) {
 }
 
 // Recarrega o .env para garantir que estamos lendo o arquivo
-$dotenv->overload();
+// $dotenv->overload();
 if (empty($_ENV['APP_KEY'])) {
     echo "🔑 Gerando chave da aplicação (APP_KEY)...\n";
     passthru('php ' . $basePath . '/artisan key:generate');
     echo "✅ Chave gerada.\n";
 
     // Recarrega o .env mais uma vez para pegar a chave recém-gerada
-    $dotenv->overload();
+    // $dotenv->overload();
 }
 
 // --- PASSO 4: Setup do Banco de Dados ---

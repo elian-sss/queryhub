@@ -7,7 +7,7 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import Modal from '@/Components/Modal.vue';
-import { Head, useForm, router } from '@inertiajs/vue3';
+import { Head, useForm, router, Link } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
 defineProps({
@@ -143,7 +143,14 @@ const confirmDeletion = (connection) => {
                                     <span class="font-semibold text-gray-900 dark:text-gray-100">{{ conn.name }}</span>
                                     <span class="text-sm text-gray-600 dark:text-gray-400 block">{{ conn.database_user }}@{{ conn.host }}:{{ conn.port }}</span>
                                 </div>
-                                <div class="space-x-2">
+                                <div class="space-x-2 flex-shrink-0">
+                                    <Link 
+                                        :href="route('connections.permissions.edit', conn.id)"
+                                        as="button"
+                                        class="px-4 py-2 border border-gray-300 dark:border-gray-500 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                        >
+                                            Permissões
+                                        </Link>
                                     <SecondaryButton @click="openEditModal(conn)">
                                         Editar
                                     </SecondaryButton>
