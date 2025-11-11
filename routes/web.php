@@ -56,6 +56,10 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/connections/{connection}/databases/{databaseName}/tables', [TableController::class, 'index'])
         ->name('tables.index');
+    Route::get('/connections/{connection}/databases/{databaseName}/sql', [DatabaseController::class, 'showSql'])
+        ->name('database.showSql');
+    Route::post('/connections/{connection}/databases/{databaseName}/execute-sql', [DatabaseController::class, 'executeSql'])
+        ->name('database.executeSql');
     Route::get('/connections/{connection}/databases/{databaseName}/tables/{tableName}', [TableController::class, 'showData'])
         ->name('tables.data');
 
