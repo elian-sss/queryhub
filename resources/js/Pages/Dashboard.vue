@@ -14,6 +14,10 @@ const props = defineProps({
         type: Object,
         default: () => ({ columns: [], rowsPaginator: { data: [], links: [] } })
     },
+    tableStructure: {
+        type: Array,
+        default: () => []
+    },
     connectionError: { type: String, default: null },
 
     // Novas props para a aba SQL
@@ -136,6 +140,17 @@ const submitSql = () => {
 
                             <Link
                                 v-if="selectedTableName"
+                                :href="route('tables.structure', { connection: selectedConnectionId, databaseName: selectedDatabaseName, tableName: selectedTableName })"
+                                :class="[ activeTab === 'structure' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm']"
+                            >
+                                Estrutura
+                            </Link>
+                            <span v-else class="border-transparent text-gray-400 dark:text-gray-600 whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm cursor-not-allowed">
+                                Estrutura
+                            </span>
+
+                            <Link
+                                v-if="selectedTableName"
                                 :href="route('tables.data', { connection: selectedConnectionId, databaseName: selectedDatabaseName, tableName: selectedTableName })"
                                 :class="[
                                 activeTab === 'data'
@@ -199,6 +214,49 @@ const submitSql = () => {
                             </table>
                         </div>
                         <div v-if="hasDataRows && tableData.rowsPaginator.links.length > 3" class="mt-6 flex justify-between items-center">
+                        </div>
+                    </div>
+
+                    <div v-if="activeTab === 'structure'">
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+                            Estrutura da Tabela <span class="text-green-600 font-mono">{{ selectedTableName }}</span>
+                        </h2>
+
+                        <div class="w-full overflow-x-auto bg-white dark:bg-gray-800 shadow rounded-lg">
+                            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3">Nome (Field)</th>
+                                    <th scope="col" class="px-6 py-3">Tipo (Type)</th>
+                                    <th scope="col" class="px-6 py-3">Nulo (Null)</th>
+                                    <th scope="col" class="px-6 py-3">Chave (Key)</th>
+                                    <th scope="col" class="px-6 py-3">Padrão (Default)</th>
+                                    <th scope="col" class="px-6 py-3">Extra</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr v-for="column in tableStructure" :key="column.Field" class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                                    <th scope="row" class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap font-mono">
+                                        {{ column.Field }}
+                                    </th>
+                                    <td class="px-6 py-4 font-mono">
+                                        {{ column.Type }}
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        {{ column.Null }}
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        {{ column.Key }}
+                                    </td>
+                                    <td class="px-6 py-4 font-mono">
+                                        {{ column.Default }}
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        {{ column.Extra }}
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 

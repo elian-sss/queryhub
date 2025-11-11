@@ -187,4 +187,46 @@ class TableController extends Controller
             'activeTab' => 'data',
         ]);
     }
+
+    public function showStructure(Request $request, Connection $connection, $databaseName, $tableName)
+    {
+        $tables = [];
+        $tableStructure = []; // Prop para os dados da estrutura
+        $error = null;
+        $layoutData = [];
+        $db = null;
+
+        try {
+            // --- PASSO 1: Conectar COM o banco ---
+            $db = $this->setupDynamicConnection($connection, $databaseName);
+
+            // 1a. Pegar tabelas (para a 3ª coluna)
+            $results = $db->select('SHOW TABLES');
+            $key = 'Tables_in_' . $databaseName;
+            $tables = collect($results)->map(fn($t) => $t->$key)->values()->all();
+
+            // 1b. Pega a ESTRUTURA da tabela (A NOVA LÓGICA)
+            // SHOW COLUMNS retorna: Field, Type, Null, Key, Default, Extra
+            $tableStructure = $db->select("SHOW COLUMNS FROM `{$tableName}`");
+
+            // --- PASSO 2: Pegar Layout Data (Conexão SEM banco) ---
+            $layoutData = $this->getLayoutData($connection);
+
+        } catch (\Exception $e) {
+            Log::error('Falha na conexão dinâmica (ShowStructure): ' . $e->getMessage());
+            $error = 'Falha ao conectar: ' . $e->getMessage();
+        } finally {
+            if ($db) DB::disconnect($db->getName());
+        }
+
+        return Inertia::render('Dashboard', [
+            ...$layoutData,
+            'selectedDatabaseName' => $databaseName,
+            'tables' => $tables,
+            'selectedTableName' => $tableName,
+            'tableStructure' => $tableStructure, // <-- Passa a estrutura
+            'connectionError' => $error,
+            'activeTab' => 'structure', // <-- Define a aba ativa
+        ]);
+    }
 }

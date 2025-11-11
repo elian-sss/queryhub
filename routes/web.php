@@ -70,6 +70,8 @@ Route::middleware('auth')->group(function () {
         ->name('database.executeSql');
     Route::get('/connections/{connection}/databases/{databaseName}/tables/{tableName}', [TableController::class, 'showData'])
         ->name('tables.data');
+    Route::get('/connections/{connection}/databases/{databaseName}/tables/{tableName}/structure', [TableController::class, 'showStructure'])
+        ->name('tables.structure');
 
     Route::get('/connections/{connection}/permissions', [ConnectionPermissionController::class, 'edit'])
             ->name('connections.permissions.edit');
