@@ -181,7 +181,6 @@ const submitSql = () => {
                     </div>
 
                     <div v-if="activeTab === 'data'">
-                        (Conteúdo da tabela de dados - copiado da sua versão anterior)
                         <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
                             Mostrando dados de <span class="text-green-600 font-mono">{{ selectedTableName }}</span>
                         </h2>

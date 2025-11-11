@@ -154,8 +154,10 @@ const submitDbPermissions = () => {
                                         </SecondaryButton>
                                     </div>
                                 </div>
-                                <div v-else
-                                     class="flex items-center p-3 border dark:border-gray-700 rounded-lg bg-gray-100 dark:bg-gray-900 opacity-60">
+                                <div v-else class="flex items-center p-3 border dark:border-gray-700 rounded-lg bg-gray-100 dark:bg-gray-900 opacity-60">
+                                    <Checkbox :checked="true" :disabled="true" />
+                                    <span class="ms-3 text-sm text-gray-800 dark:text-gray-200">{{ user.name }}</span>
+                                    <span class="ms-2 text-xs text-gray-500 dark:text-gray-400">({{ user.email }} - Admin)</span>
                                 </div>
                             </div>
                             <InputError :message="form.errors.user_ids" class="mt-2"/>
