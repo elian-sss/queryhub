@@ -50,6 +50,10 @@ class Connection extends Model
         return $this->belongsToMany(User::class, 'connection_user');
     }
 
+    public function databasePermissions() {
+        return $this->hasMany(DatabasePermission::class);
+    }
+
     protected static function boot()
     {
         parent::boot();

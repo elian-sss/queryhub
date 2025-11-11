@@ -53,4 +53,8 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(User::class);
     }
+
+    public function databasePermissions() {
+        return $this->hasMany(DatabasePermission::class);
+    }
 }

@@ -55,11 +55,35 @@ class TableController extends Controller
             $db_layout = $this->setupDynamicConnection($connection);
             $results = $db_layout->select('SHOW DATABASES');
             $excludedDbs = ['information_schema', 'mysql', 'performance_schema', 'sys'];
-            $databases = collect($results)
+
+            // 1. Pega TODOS os bancos da conexão
+            $allDatabases = collect($results)
                 ->map(fn($db) => $db->Database)
                 ->filter(fn($dbName) => !in_array($dbName, $excludedDbs))
-                ->values()
-                ->all();
+                ->values();
+
+            // 2. Pega as permissões ESPECÍFICAS do usuário
+            $allowedDatabases = \App\Models\DatabasePermission::where('user_id', Auth::id())
+                ->where('connection_id', $connection->id)
+                ->pluck('database_name'); // Pega só os nomes
+
+            // 3. Lógica de Filtro
+            if (Auth::user()->role === 'Administrator') {
+                // 3.1. Admins veem tudo
+                $databases = $allDatabases->all();
+            } else {
+                // 3.2. Para Developers, checar se há permissões específicas
+                if ($allowedDatabases->isEmpty()) {
+                    // 3.3. Nenhuma permissão específica? Mostra TODOS os bancos
+                    $databases = $allDatabases->all();
+                } else {
+                    // 3.4. Tem permissões? Filtra a lista
+                    $databases = $allDatabases->filter(fn($dbName) => $allowedDatabases->contains($dbName))
+                        ->values() // <-- ESTA É A CORREÇÃO
+                        ->all();
+                }
+            }
+
         } finally {
             if ($db_layout) DB::disconnect($db_layout->getName());
         }
@@ -71,7 +95,7 @@ class TableController extends Controller
 
         return [
             'userConnections' => $userConnections,
-            'databases' => $databases,
+            'databases' => $databases, // A lista agora está filtrada
             'selectedConnectionId' => $connection->id,
         ];
     }

@@ -3,6 +3,7 @@
 use App\Http\Controllers\ConnectionController;
 use App\Http\Controllers\ConnectionPermissionController;
 use App\Http\Controllers\DatabaseController;
+use App\Http\Controllers\DatabasePermissionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TableController;
 use Illuminate\Foundation\Application;
@@ -48,6 +49,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/connections', [ConnectionController::class, 'store'])->name('connections.store');
         Route::patch('/connections/{connection}', [ConnectionController::class, 'update'])->name('connections.update');
         Route::delete('/connections/{connection}', [ConnectionController::class, 'destroy'])->name('connections.destroy');
+
+        Route::get('/connections/{connection}/users/{user}/db-permissions', [DatabasePermissionController::class, 'edit'])
+            ->name('connections.users.db-permissions.edit');
+
+        // Rota POST para salvar as permissões
+        Route::post('/connections/{connection}/users/{user}/db-permissions', [DatabasePermissionController::class, 'update'])
+            ->name('connections.users.db-permissions.update');
 
     });
 
