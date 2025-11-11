@@ -1,13 +1,39 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, watch, computed } from 'vue'; // Importe o 'computed'
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
-import { Link } from '@inertiajs/vue3';
+
+// Importa o hook da biblioteca de toast
+import { useToast } from 'vue-toastification';
 
 const showingNavigationDropdown = ref(false);
+
+// --- LÓGICA DE NOTIFICAÇÃO (MÉTODO MAIS ROBUSTO) ---
+const page = usePage();
+const toast = useToast();
+
+// 1. Crie computed props para observar as flash messages
+const flashSuccess = computed(() => page.props.flash.success);
+const flashError = computed(() => page.props.flash.error);
+
+// 2. Observe as 'computed props' individualmente
+// Isso detecta a mudança de forma mais confiável
+watch(flashSuccess, (newValue) => {
+    if (newValue) {
+        toast.success(newValue);
+    }
+});
+
+watch(flashError, (newValue) => {
+    if (newValue) {
+        toast.error(newValue);
+    }
+});
+// --- FIM DA LÓGICA ---
 </script>
 
 <template>

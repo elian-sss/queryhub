@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
@@ -97,53 +98,72 @@ class DatabaseController extends Controller
     {
         $request->validate(['query' => 'required|string']);
         $sql = $request->input('query');
-
-        $sqlResults = null;
-        $sqlAffectedRows = null;
-        $error = null;
-        $layoutData = [];
         $db = null;
 
-        try {
-            // --- PASSO 1: Executar a Query (Conexão COM banco) ---
-            $db = $this->setupDynamicConnection($connection, $databaseName);
+        $isSelectQuery = Str::startsWith(strtoupper(trim($sql)), 'SELECT') ||
+            Str::startsWith(strtoupper(trim($sql)), 'SHOW');
 
-            $isSelectQuery = Str::startsWith(strtoupper(trim($sql)), 'SELECT') ||
-                Str::startsWith(strtoupper(trim($sql)), 'SHOW');
+        if ($isSelectQuery) {
+            // --- BLOCO DO SELECT / SHOW ---
+            // Este bloco renderiza a si mesmo, não redireciona.
 
-            if ($isSelectQuery) {
+            $sqlResults = null;
+            $error = null;
+            $layoutData = [];
+
+            try {
+                $db = $this->setupDynamicConnection($connection, $databaseName);
                 $sqlResults = $db->select($sql);
-            } else {
-                $sqlAffectedRows = $db->affectingStatement($sql);
-            }
-
-            // --- PASSO 2: Pegar Layout Data (Conexão SEM banco) ---
-            $layoutData = $this->getLayoutData($connection);
-
-        } catch (\Exception $e) {
-            Log::error('Falha na query SQL: ' . $e->getMessage());
-            $error = 'Falha ao executar query: Tabelas ' . $e->getMessage();
-            // Se a query falhar, ainda tentamos pegar o layout
-            if (empty($layoutData)) {
-                try {
-                    $layoutData = $this->getLayoutData($connection);
-                } catch (\Exception $e2) {
-                    // Falha total
+                $layoutData = $this->getLayoutData($connection);
+            } catch (\Exception $e) {
+                Log::error('Falha na query SQL (SELECT): ' . $e->getMessage());
+                $error = 'Falha ao executar query: ' . $e->getMessage();
+                // Se falhar, ainda tenta pegar o layout
+                if (empty($layoutData)) {
+                    try { $layoutData = $this->getLayoutData($connection); } catch (\Exception $e2) {}
                 }
+            } finally {
+                if ($db) DB::disconnect($db->getName());
             }
-        } finally {
-            if ($db) DB::disconnect($db->getName());
-        }
 
-        return Inertia::render('Dashboard', [
-            ...$layoutData,
-            'selectedDatabaseName' => $databaseName,
-            'sqlQuery' => $sql,
-            'sqlResults' => $sqlResults,
-            'sqlAffectedRows' => $sqlAffectedRows,
-            'connectionError' => $error,
-            'activeTab' => 'sql',
-        ]);
+            // Renderiza a página com resultados ou erro (sem redirect)
+            return Inertia::render('Dashboard', [
+                ...$layoutData,
+                'selectedDatabaseName' => $databaseName,
+                'sqlQuery' => $sql,
+                'sqlResults' => $sqlResults,
+                'sqlAffectedRows' => null,
+                'connectionError' => $error,
+                'activeTab' => 'sql',
+            ]);
+
+        } else {
+            // --- BLOCO DO UPDATE/INSERT/DELETE ---
+            // Este bloco SEMPRE redireciona, com sucesso ou erro.
+
+            try {
+                $db = $this->setupDynamicConnection($connection, $databaseName);
+                $sqlAffectedRows = $db->affectingStatement($sql);
+
+                // SUCESSO: Redireciona para a aba SQL com notificação de sucesso
+                return Redirect::route('database.showSql', [
+                    'connection' => $connection->id,
+                    'databaseName' => $databaseName,
+                ])->with('success', "$sqlAffectedRows linhas afetadas.");
+
+            } catch (\Exception $e) {
+                Log::error('Falha na query SQL (AFFECTING): ' . $e->getMessage());
+
+                // ERRO: Redireciona para a aba SQL com notificação de erro
+                return Redirect::route('database.showSql', [
+                    'connection' => $connection->id,
+                    'databaseName' => $databaseName,
+                ])->with('error', 'Falha: ' . substr($e->getMessage(), 0, 200));
+
+            } finally {
+                if ($db) DB::disconnect($db->getName());
+            }
+        }
     }
 
     public function showSql(Connection $connection, $databaseName)
