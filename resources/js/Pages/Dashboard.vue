@@ -1,8 +1,14 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import {Head, Link, router, useForm} from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import DangerButton from '@/Components/DangerButton.vue';
+import SecondaryButton from '@/Components/SecondaryButton.vue';
+import Modal from '@/Components/Modal.vue';
+import TextInput from '@/Components/TextInput.vue';
+import InputLabel from '@/Components/InputLabel.vue';
+import PrimaryButton from "@/Components/PrimaryButton.vue";
+import InputError from "@/Components/InputError.vue";
 
 const props = defineProps({
     userConnections: Array,
@@ -28,62 +34,95 @@ const props = defineProps({
     sqlAffectedRows: { type: Number, default: null },
 });
 
-// Helper para truncar dados
+// ... (truncate, hasDataRows, hasSqlResults, sqlResultColumns, sqlForm, submitSql, confirmDelete - SEM MUDANÇAS) ...
 const truncate = (value, length = 50) => {
     if (value === null) return 'NULL';
     let str = String(value);
     if (str.length > length) return str.substring(0, length) + '...';
     return str;
 };
-
-// Computar se a tabela de dados tem linhas
 const hasDataRows = computed(() => {
     return props.tableData.rowsPaginator && props.tableData.rowsPaginator.data.length > 0;
 });
-
-// Computar se a query SQL retornou linhas
 const hasSqlResults = computed(() => {
     return props.sqlResults && props.sqlResults.length > 0;
 });
-
-// Computar colunas da query SQL
 const sqlResultColumns = computed(() => {
     return hasSqlResults.value ? Object.keys(props.sqlResults[0]) : [];
 });
-
-// Formulário para a aba SQL
 const sqlForm = useForm({
     query: props.sqlQuery,
 });
-
 const submitSql = () => {
     sqlForm.post(route('database.executeSql', {
         connection: props.selectedConnectionId,
         databaseName: props.selectedDatabaseName
     }), {
-        preserveState: false, // Recarregar props para obter resultados
+        preserveState: false,
         preserveScroll: true,
     });
 };
-
 const confirmDelete = (row) => {
     if (window.confirm('Tem certeza que deseja deletar esta linha? Esta ação não pode ser desfeita.')) {
-
-        // Passamos a linha inteira no 'data'
         router.delete(route('tables.row.destroy', {
             connection: props.selectedConnectionId,
             databaseName: props.selectedDatabaseName,
             tableName: props.selectedTableName,
         }), {
-            data: {
-                row: row
-            },
-            preserveScroll: true, // Mantém o scroll ao recarregar
-            onSuccess: () => {
-                // A notificação de 'success' ou 'error' virá do backend
-            },
+            data: { row: row },
+            preserveScroll: true,
+            onSuccess: () => {},
         });
     }
+};
+
+// --- CORREÇÃO NA LÓGICA DE EDIÇÃO ---
+const showEditModal = ref(false);
+
+// 1. O formulário AGORA reflete o que o backend espera
+const editForm = useForm({
+    newRowData: {},       // O backend espera esta chave
+    originalPkValues: {}  // O backend espera esta chave
+});
+
+const openEditModal = (row) => {
+    // 2. Clona a linha para 'newRowData'
+    editForm.newRowData = JSON.parse(JSON.stringify(row));
+    editForm.errors = {};
+
+    // 3. Armazena os valores originais da Chave Primária em 'originalPkValues'
+    let tempPks = {};
+    props.tableData.primaryKeyColumns.forEach(pkCol => {
+        tempPks[pkCol] = row[pkCol];
+    });
+    editForm.originalPkValues = tempPks;
+
+    // 4. Abre o modal
+    showEditModal.value = true;
+};
+
+const closeModal = () => {
+    showEditModal.value = false;
+};
+
+// 5. A submissão agora é muito mais simples
+const submitUpdate = () => {
+    editForm.patch(route('tables.row.update', {
+        connection: props.selectedConnectionId,
+        databaseName: props.selectedDatabaseName,
+        tableName: props.selectedTableName,
+    }), {
+        // O Inertia enviará 'newRowData' e 'originalPkValues' automaticamente
+        preserveScroll: true,
+        onSuccess: () => {
+            closeModal();
+            // Notificação virá do backend
+        },
+        onError: (errors) => {
+            // Os erros agora são mapeados corretamente
+            console.log(errors);
+        }
+    });
 };
 </script>
 
@@ -223,7 +262,12 @@ const confirmDelete = (row) => {
                         <div v-if="hasDataRows" class="w-full overflow-x-auto bg-white dark:bg-gray-800 shadow rounded-lg">
                             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                                 <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                                <tr><th v-for="col in tableData.columns" :key="col" scope="col" class="px-6 py-3 font-mono">{{ col }}</th></tr>
+                                <tr>
+                                    <th v-for="col in tableData.columns" :key="col" scope="col" class="px-6 py-3 font-mono">{{ col }}</th>
+                                    <th v-if="tableData.primaryKeyColumns.length > 0" scope="col" class="px-6 py-3">
+                                        Ações
+                                    </th>
+                                </tr>
                                 </thead>
                                 <tbody>
                                 <tr v-for="(row, index) in tableData.rowsPaginator.data" :key="index" class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
@@ -232,6 +276,10 @@ const confirmDelete = (row) => {
                                     </td>
 
                                     <td v-if="tableData.primaryKeyColumns.length > 0" class="px-6 py-4">
+                                        <SecondaryButton @click="openEditModal(row)" title="Editar Linha">
+                                            Editar
+                                        </SecondaryButton>
+
                                         <DangerButton @click="confirmDelete(row)" title="Deletar Linha">
                                             Deletar
                                         </DangerButton>
@@ -317,6 +365,9 @@ const confirmDelete = (row) => {
                                     <th v-for="col in sqlResultColumns" :key="col" scope="col" class="px-6 py-3 font-mono">
                                         {{ col }}
                                     </th>
+                                    <th v-if="tableData.primaryKeyColumns.length > 0" scope="col" class="px-6 py-3">
+                                        Ações
+                                    </th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -325,6 +376,9 @@ const confirmDelete = (row) => {
                                         <span :class="{'text-gray-400 dark:text-gray-500 italic': row[col] === null}">{{ truncate(row[col]) }}</span>
                                     </td>
                                     <td v-if="tableData.primaryKeyColumns.length > 0" class="px-6 py-4">
+                                        <SecondaryButton @click="openEditModal(row)" title="Editar Linha">
+                                            Editar
+                                        </SecondaryButton>
                                         <DangerButton @click="confirmDelete(row)" title="Deletar Linha">
                                             Deletar
                                         </DangerButton>
@@ -350,6 +404,56 @@ const confirmDelete = (row) => {
                 </div>
 
             </main>
+
+            <Modal :show="showEditModal" @close="closeModal">
+                <form @submit.prevent="submitUpdate" class="p-6 dark:bg-gray-800">
+                    <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+                        Editando Linha em <span class="font-mono text-blue-600">{{ selectedTableName }}</span>
+                    </h2>
+                    <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                        Modifique os valores da linha. (Colunas de chave primária não devem ser alteradas).
+                    </p>
+
+                    <div class="mt-6 max-h-[60vh] overflow-y-auto space-y-4 pr-2">
+
+                        <div v-for="(value, column) in editForm.newRowData" :key="column">
+                            <InputLabel :for="column" :value="column" class="font-mono" />
+
+                            <textarea
+                                v-if="typeof value === 'string' && value.length > 100"
+                                :id="column"
+                                v-model="editForm.newRowData[column]" rows="4"
+                                class="mt-1 block w-full font-mono text-sm
+                           text-gray-900 dark:text-gray-200
+                           bg-white dark:bg-gray-700
+                           border-gray-300 dark:border-gray-600
+                           rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                :disabled="tableData.primaryKeyColumns.includes(column)"
+                            ></textarea>
+
+                            <TextInput
+                                v-else
+                                :id="column"
+                                type="text"
+                                v-model="editForm.newRowData[column]" class="mt-1 block w-full font-mono text-sm"
+                                :disabled="tableData.primaryKeyColumns.includes(column)"
+                                :class="{ 'bg-gray-100 dark:bg-gray-900': tableData.primaryKeyColumns.includes(column) }"
+                            />
+                            <InputError :message="editForm.errors[`newRowData.${column}`]" class="mt-2" />
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex justify-end gap-4">
+                        <SecondaryButton @click="closeModal"> Cancelar </SecondaryButton>
+                        <PrimaryButton
+                            :class="{ 'opacity-25': editForm.processing }"
+                            :disabled="editForm.processing"
+                        >
+                            Salvar Alterações
+                        </PrimaryButton>
+                    </div>
+                </form>
+            </Modal>
         </div>
     </AuthenticatedLayout>
 </template>

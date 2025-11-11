@@ -238,6 +238,52 @@ class TableController extends Controller
         ]);
     }
 
+    public function updateRow(Request $request, Connection $connection, $databaseName, $tableName)
+    {
+        // Pega os dados validados
+        $validated = $request->validate([
+            'newRowData' => 'required|array', // Os dados do formulário (o que o usuário digitou)
+            'originalPkValues' => 'required|array', // Os valores originais da PK (para o WHERE)
+        ]);
+
+        $newRowData = $validated['newRowData'];
+        $originalPkValues = $validated['originalPkValues'];
+
+        $db = null;
+        try {
+            // --- PASSO 1: Conectar COM o banco ---
+            $db = $this->setupDynamicConnection($connection, $databaseName);
+
+            // --- PASSO 2: Validar a Chave Primária ---
+            if (empty($originalPkValues)) {
+                return Redirect::back()->with('error', 'Esta tabela não tem chave primária. Não é possível editar a linha.');
+            }
+
+            // --- PASSO 3: Construir e Executar o UPDATE ---
+            // O Query Builder lida com a segurança (bindings)
+            // 1. Inicia a query
+            $query = $db->table($tableName);
+
+            // 2. Constrói a cláusula WHERE dinamicamente
+            foreach ($originalPkValues as $column => $value) {
+                $query->where($column, $value);
+            }
+
+            // 3. Executa o UPDATE com os novos dados
+            $affectedRows = $query->update($newRowData);
+
+            return Redirect::back()->with('success', "$affectedRows linha(s) atualizada(s).");
+
+        } catch (\Exception $e) {
+            Log::error('Falha ao atualizar linha: ' . $e->getMessage());
+            // Tenta extrair uma mensagem de erro mais amigável
+            $sqlMessage = $e->errorInfo[2] ?? $e->getMessage();
+            return Redirect::back()->with('error', 'Falha ao atualizar: ' . substr($sqlMessage, 0, 200));
+        } finally {
+            if ($db) DB::disconnect($db->getName());
+        }
+    }
+
     public function destroyRow(Request $request, Connection $connection, $databaseName, $tableName)
     {
         // Pega a linha inteira que o frontend enviou
