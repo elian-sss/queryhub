@@ -1,7 +1,8 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import {Head, Link, router, useForm} from '@inertiajs/vue3';
 import { computed } from 'vue';
+import DangerButton from '@/Components/DangerButton.vue';
 
 const props = defineProps({
     userConnections: Array,
@@ -63,6 +64,26 @@ const submitSql = () => {
         preserveState: false, // Recarregar props para obter resultados
         preserveScroll: true,
     });
+};
+
+const confirmDelete = (row) => {
+    if (window.confirm('Tem certeza que deseja deletar esta linha? Esta ação não pode ser desfeita.')) {
+
+        // Passamos a linha inteira no 'data'
+        router.delete(route('tables.row.destroy', {
+            connection: props.selectedConnectionId,
+            databaseName: props.selectedDatabaseName,
+            tableName: props.selectedTableName,
+        }), {
+            data: {
+                row: row
+            },
+            preserveScroll: true, // Mantém o scroll ao recarregar
+            onSuccess: () => {
+                // A notificação de 'success' ou 'error' virá do backend
+            },
+        });
+    }
 };
 </script>
 
@@ -209,6 +230,12 @@ const submitSql = () => {
                                     <td v-for="col in tableData.columns" :key="col" class="px-6 py-4 font-mono">
                                         <span :class="{'text-gray-400 dark:text-gray-500 italic': row[col] === null}">{{ truncate(row[col]) }}</span>
                                     </td>
+
+                                    <td v-if="tableData.primaryKeyColumns.length > 0" class="px-6 py-4">
+                                        <DangerButton @click="confirmDelete(row)" title="Deletar Linha">
+                                            Deletar
+                                        </DangerButton>
+                                    </td>
                                 </tr>
                                 </tbody>
                             </table>
@@ -296,6 +323,11 @@ const submitSql = () => {
                                 <tr v-for="(row, index) in sqlResults" :key="index" class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
                                     <td v-for="col in sqlResultColumns" :key="col" class="px-6 py-4 font-mono">
                                         <span :class="{'text-gray-400 dark:text-gray-500 italic': row[col] === null}">{{ truncate(row[col]) }}</span>
+                                    </td>
+                                    <td v-if="tableData.primaryKeyColumns.length > 0" class="px-6 py-4">
+                                        <DangerButton @click="confirmDelete(row)" title="Deletar Linha">
+                                            Deletar
+                                        </DangerButton>
                                     </td>
                                 </tr>
                                 </tbody>

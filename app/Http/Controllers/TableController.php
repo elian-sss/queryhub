@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 
 class TableController extends Controller
@@ -145,7 +146,11 @@ class TableController extends Controller
     public function showData(Request $request, Connection $connection, $databaseName, $tableName)
     {
         $tables = [];
-        $tableData = [ 'columns' => [], 'rowsPaginator' => null ];
+        $tableData = [
+            'columns' => [],
+            'rowsPaginator' => null,
+            'primaryKeyColumns' => [],
+        ];
         $error = null;
         $layoutData = [];
         $db = null;
@@ -162,6 +167,9 @@ class TableController extends Controller
             // 1b. Pega dados da tabela (colunas e linhas)
             $columnsQuery = $db->select("SHOW COLUMNS FROM `{$tableName}`");
             $tableData['columns'] = collect($columnsQuery)->pluck('Field')->all();
+
+            $pkResults = $db->select("SHOW KEYS FROM `{$tableName}` WHERE Key_name = 'PRIMARY'");
+            $tableData['primaryKeyColumns'] = collect($pkResults)->pluck('Column_name')->all();
 
             $perPage = 100;
             $tableData['rowsPaginator'] = $db->table($tableName)->paginate($perPage)
@@ -228,5 +236,54 @@ class TableController extends Controller
             'connectionError' => $error,
             'activeTab' => 'structure', // <-- Define a aba ativa
         ]);
+    }
+
+    public function destroyRow(Request $request, Connection $connection, $databaseName, $tableName)
+    {
+        // Pega a linha inteira que o frontend enviou
+        $row = $request->input('row');
+        if (!$row) {
+            return Redirect::back()->with('error', 'Nenhum dado de linha recebido.');
+        }
+
+        $db = null;
+        try {
+            // --- PASSO 1: Conectar COM o banco ---
+            $db = $this->setupDynamicConnection($connection, $databaseName);
+
+            // --- PASSO 2: Pegar a Chave Primária (de novo, por segurança) ---
+            $pkResults = $db->select("SHOW KEYS FROM `{$tableName}` WHERE Key_name = 'PRIMARY'");
+            $primaryKeyColumns = collect($pkResults)->pluck('Column_name')->all();
+
+            if (empty($primaryKeyColumns)) {
+                return Redirect::back()->with('error', 'Esta tabela não tem chave primária. Não é possível deletar a linha.');
+            }
+
+            // --- PASSO 3: Construir a Cláusula WHERE dinâmica ---
+            $whereClauses = [];
+            foreach ($primaryKeyColumns as $pkColumn) {
+                if (!isset($row[$pkColumn])) {
+                    return Redirect::back()->with('error', "Valor da chave primária '{$pkColumn}' não encontrado.");
+                }
+                $whereClauses[$pkColumn] = $row[$pkColumn];
+            }
+
+            // --- PASSO 4: Executar o DELETE ---
+            // Usamos o Query Builder com o array de WHEREs,
+            // o que nos protege de SQL Injection.
+            $affectedRows = $db->table($tableName)->where($whereClauses)->delete();
+
+            if ($affectedRows > 0) {
+                return Redirect::back()->with('success', 'Linha deletada com sucesso.');
+            } else {
+                return Redirect::back()->with('error', 'A linha não foi encontrada ou já foi deletada.');
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Falha ao deletar linha: ' . $e->getMessage());
+            return Redirect::back()->with('error', 'Falha ao deletar: '.$e->getMessage());
+        } finally {
+            if ($db) DB::disconnect($db->getName());
+        }
     }
 }

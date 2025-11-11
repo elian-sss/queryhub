@@ -72,6 +72,8 @@ Route::middleware('auth')->group(function () {
         ->name('tables.data');
     Route::get('/connections/{connection}/databases/{databaseName}/tables/{tableName}/structure', [TableController::class, 'showStructure'])
         ->name('tables.structure');
+    Route::delete('/connections/{connection}/databases/{databaseName}/tables/{tableName}/row', [TableController::class, 'destroyRow'])
+        ->name('tables.row.destroy');
 
     Route::get('/connections/{connection}/permissions', [ConnectionPermissionController::class, 'edit'])
             ->name('connections.permissions.edit');
