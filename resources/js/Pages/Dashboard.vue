@@ -244,7 +244,22 @@ const closeModal = () => {
                     </div>
 
                     <div v-if="activeTab === 'tables'">
-                        <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Banco: <span class="text-blue-600 font-mono">{{ selectedDatabaseName }}</span></h2>
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                Banco: <span class="text-blue-600 font-mono">{{ selectedDatabaseName }}</span>
+                            </h2>
+
+                            <a
+                                :href="route('database.export', { connection: selectedConnectionId, databaseName: selectedDatabaseName })"
+                                class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-500 focus:bg-green-500 active:bg-green-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                </svg>
+                                Exportar .SQL
+                            </a>
+                        </div>
+
                         <p class="text-gray-600 dark:text-gray-400">Selecione uma tabela na esquerda ou crie uma nova.</p>
                     </div>
 

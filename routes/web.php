@@ -84,6 +84,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/connections/{connection}/databases/{databaseName}/tables/{tableName}', [TableController::class, 'destroy'])
         ->name('tables.destroy');
 
+    Route::get('/connections/{connection}/databases/{databaseName}/export', [DatabaseController::class, 'export'])
+        ->name('database.export');
+
     Route::get('/connections/{connection}/permissions', [ConnectionPermissionController::class, 'edit'])
             ->name('connections.permissions.edit');
     Route::patch('/connections/{connection}/permissions', [ConnectionPermissionController::class, 'update'])
