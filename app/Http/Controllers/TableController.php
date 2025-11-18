@@ -284,6 +284,46 @@ class TableController extends Controller
         }
     }
 
+    public function storeRow(Request $request, Connection $connection, $databaseName, $tableName)
+    {
+        $validated = $request->validate([
+            'rowData' => 'required|array', // Os dados para inserir
+        ]);
+
+        // Filtra chaves nulas ou vazias que podem causar erro em campos auto-increment
+        // (Opcional: dependendo de como o frontend envia, podemos precisar limpar)
+        $rowData = $validated['rowData'];
+
+        // Remove campos vazios se forem strings vazias para permitir que o banco use DEFAULT ou NULL
+        // (Isso é uma heurística simples, pode precisar de ajuste dependendo do tipo da coluna)
+        foreach ($rowData as $key => $value) {
+            if ($value === '') {
+                $rowData[$key] = null;
+            }
+        }
+
+        $db = null;
+        try {
+            $db = $this->setupDynamicConnection($connection, $databaseName);
+
+            // Executa o INSERT
+            $result = $db->table($tableName)->insert($rowData);
+
+            if ($result) {
+                return Redirect::back()->with('success', 'Linha inserida com sucesso.');
+            } else {
+                return Redirect::back()->with('error', 'Falha ao inserir linha (sem erro específico).');
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Falha ao inserir linha: ' . $e->getMessage());
+            $sqlMessage = $e->errorInfo[2] ?? $e->getMessage();
+            return Redirect::back()->with('error', 'Erro ao inserir: ' . substr($sqlMessage, 0, 200));
+        } finally {
+            if ($db) DB::disconnect($db->getName());
+        }
+    }
+
     public function destroyRow(Request $request, Connection $connection, $databaseName, $tableName)
     {
         // Pega a linha inteira que o frontend enviou

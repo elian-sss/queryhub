@@ -76,6 +76,8 @@ Route::middleware('auth')->group(function () {
         ->name('tables.row.destroy');
     Route::patch('/connections/{connection}/databases/{databaseName}/tables/{tableName}/row', [TableController::class, 'updateRow'])
         ->name('tables.row.update');
+    Route::post('/connections/{connection}/databases/{databaseName}/tables/{tableName}/row', [TableController::class, 'storeRow'])
+        ->name('tables.row.store');
 
     Route::get('/connections/{connection}/permissions', [ConnectionPermissionController::class, 'edit'])
             ->name('connections.permissions.edit');
