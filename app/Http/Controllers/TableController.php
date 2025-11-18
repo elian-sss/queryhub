@@ -372,4 +372,101 @@ class TableController extends Controller
             if ($db) DB::disconnect($db->getName());
         }
     }
+
+    public function store(Request $request, Connection $connection, $databaseName)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:64|regex:/^[a-zA-Z0-9_]+$/', // Validação de nome seguro
+            'columns' => 'required|array|min:1',
+            'columns.*.name' => 'required|string|max:64|regex:/^[a-zA-Z0-9_]+$/',
+            'columns.*.type' => 'required|string',
+            'columns.*.length' => 'nullable|string',
+            'columns.*.nullable' => 'boolean',
+            'columns.*.ai' => 'boolean', // Auto Increment
+            'columns.*.pk' => 'boolean', // Primary Key
+        ]);
+
+        $tableName = $data['name'];
+        $columns = $data['columns'];
+        $db = null;
+
+        try {
+            $db = $this->setupDynamicConnection($connection, $databaseName);
+
+            // Construção do SQL CREATE TABLE
+            $sqlDefinitions = [];
+            $primaryKeys = [];
+
+            foreach ($columns as $col) {
+                $def = "`{$col['name']}` {$col['type']}";
+
+                // Adiciona tamanho se necessário (ex: VARCHAR(255))
+                if (!empty($col['length']) && !in_array(strtoupper($col['type']), ['TEXT', 'DATE', 'DATETIME', 'BOOLEAN'])) {
+                    $def .= "({$col['length']})";
+                }
+
+                // Nullable?
+                $def .= $col['nullable'] ? " NULL" : " NOT NULL";
+
+                // Auto Increment?
+                if ($col['ai']) {
+                    $def .= " AUTO_INCREMENT";
+                }
+
+                // É chave primária?
+                if ($col['pk']) {
+                    $primaryKeys[] = "`{$col['name']}`";
+                }
+
+                $sqlDefinitions[] = $def;
+            }
+
+            // Adiciona a definição de chave primária no final
+            if (!empty($primaryKeys)) {
+                $sqlDefinitions[] = "PRIMARY KEY (" . implode(', ', $primaryKeys) . ")";
+            }
+
+            $sqlBody = implode(', ', $sqlDefinitions);
+            $sql = "CREATE TABLE `{$tableName}` ({$sqlBody}) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+
+            // Executa
+            $db->statement($sql);
+
+            return Redirect::back()->with('success', "Tabela '{$tableName}' criada com sucesso.");
+
+        } catch (\Exception $e) {
+            Log::error('Falha ao criar tabela: ' . $e->getMessage());
+            return Redirect::back()->with('error', 'Erro ao criar tabela: ' . $e->getMessage());
+        } finally {
+            if ($db) DB::disconnect($db->getName());
+        }
+    }
+
+    /**
+     * Exclui (Drop) uma tabela.
+     * (NOVO MÉTODO)
+     */
+    public function destroy(Connection $connection, $databaseName, $tableName)
+    {
+        $db = null;
+        try {
+            $db = $this->setupDynamicConnection($connection, $databaseName);
+
+            // DROP TABLE simples
+            $db->statement("DROP TABLE `{$tableName}`");
+
+            // Se a tabela excluída era a que estava sendo visualizada, limpa a seleção
+            // O frontend lidará com o redirecionamento se necessário
+            return Redirect::route('tables.index', [
+                'connection' => $connection->id,
+                'databaseName' => $databaseName
+            ])->with('success', "Tabela '{$tableName}' excluída.");
+
+        } catch (\Exception $e) {
+            Log::error('Falha ao excluir tabela: ' . $e->getMessage());
+            return Redirect::back()->with('error', 'Erro ao excluir: ' . $e->getMessage());
+        } finally {
+            if ($db) DB::disconnect($db->getName());
+        }
+    }
 }

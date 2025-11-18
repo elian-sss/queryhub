@@ -79,6 +79,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/connections/{connection}/databases/{databaseName}/tables/{tableName}/row', [TableController::class, 'storeRow'])
         ->name('tables.row.store');
 
+    Route::post('/connections/{connection}/databases/{databaseName}/tables', [TableController::class, 'store'])
+        ->name('tables.store');
+    Route::delete('/connections/{connection}/databases/{databaseName}/tables/{tableName}', [TableController::class, 'destroy'])
+        ->name('tables.destroy');
+
     Route::get('/connections/{connection}/permissions', [ConnectionPermissionController::class, 'edit'])
             ->name('connections.permissions.edit');
     Route::patch('/connections/{connection}/permissions', [ConnectionPermissionController::class, 'update'])

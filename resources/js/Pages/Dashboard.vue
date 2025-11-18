@@ -4,12 +4,13 @@ import {Head, Link, router, useForm} from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue'; // Importar PrimaryButton
+import PrimaryButton from '@/Components/PrimaryButton.vue';
 import Modal from '@/Components/Modal.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputLabel from '@/Components/InputLabel.vue';
-import InputError from '@/Components/InputError.vue'; // Importar InputError (estava faltando)
+import InputError from '@/Components/InputError.vue';
 
+// --- Props ---
 const props = defineProps({
     userConnections: Array,
     selectedConnectionId: { type: Number, default: null },
@@ -21,31 +22,24 @@ const props = defineProps({
         type: Object,
         default: () => ({ columns: [], rowsPaginator: { data: [], links: [] }, primaryKeyColumns: [] })
     },
-    tableStructure: {
-        type: Array,
-        default: () => []
-    },
+    tableStructure: { type: Array, default: () => [] },
     connectionError: { type: String, default: null },
-
     activeTab: { type: String, default: null },
     sqlQuery: { type: String, default: '' },
     sqlResults: { type: Array, default: null },
     sqlAffectedRows: { type: Number, default: null },
 });
 
-// --- Helpers e Computed ---
+// --- Helpers ---
 const truncate = (value, length = 50) => {
     if (value === null) return 'NULL';
     let str = String(value);
     if (str.length > length) return str.substring(0, length) + '...';
     return str;
 };
-const hasDataRows = computed(() => props.tableData.rowsPaginator && props.tableData.rowsPaginator.data.length > 0);
-const hasSqlResults = computed(() => props.sqlResults && props.sqlResults.length > 0);
-const sqlResultColumns = computed(() => hasSqlResults.value ? Object.keys(props.sqlResults[0]) : []);
 
-// --- SQL Form ---
-const sqlForm = useForm({ query: props.sqlQuery });
+// --- SQL ---
+const sqlForm = useForm({ query: props.sqlQuery || 'SELECT * FROM ' });
 const submitSql = () => {
     sqlForm.post(route('database.executeSql', {
         connection: props.selectedConnectionId,
@@ -53,8 +47,12 @@ const submitSql = () => {
     }), { preserveState: false, preserveScroll: true });
 };
 
-// --- Delete Logic ---
-const confirmDelete = (row) => {
+// --- Row Actions ---
+const hasDataRows = computed(() => props.tableData.rowsPaginator && props.tableData.rowsPaginator.data.length > 0);
+const hasSqlResults = computed(() => props.sqlResults && props.sqlResults.length > 0);
+const sqlResultColumns = computed(() => hasSqlResults.value ? Object.keys(props.sqlResults[0]) : []);
+
+const confirmDeleteRow = (row) => {
     if (window.confirm('Tem certeza que deseja deletar esta linha?')) {
         router.delete(route('tables.row.destroy', {
             connection: props.selectedConnectionId,
@@ -64,7 +62,7 @@ const confirmDelete = (row) => {
     }
 };
 
-// --- Edit Logic ---
+// --- Edit Row Logic ---
 const showEditModal = ref(false);
 const editForm = useForm({ newRowData: {}, originalPkValues: {} });
 
@@ -77,48 +75,87 @@ const openEditModal = (row) => {
     showEditModal.value = true;
 };
 
-const submitUpdate = () => {
+const submitUpdateRow = () => {
     editForm.patch(route('tables.row.update', {
         connection: props.selectedConnectionId,
         databaseName: props.selectedDatabaseName,
         tableName: props.selectedTableName,
-    }), {
-        preserveScroll: true,
-        onSuccess: () => closeModal(),
-    });
+    }), { preserveScroll: true, onSuccess: () => closeModal() });
 };
 
-// --- INSERT LOGIC (NOVO) ---
+// --- Insert Row Logic ---
 const showInsertModal = ref(false);
 const insertForm = useForm({ rowData: {} });
 
 const openInsertModal = () => {
-    // Inicializa o formulário com chaves vazias baseadas nas colunas da tabela
     let emptyRow = {};
-    props.tableData.columns.forEach(col => {
-        emptyRow[col] = ''; // Começa vazio. O backend converterá '' para null se necessário.
-    });
-
+    props.tableData.columns.forEach(col => { emptyRow[col] = ''; });
     insertForm.rowData = emptyRow;
     insertForm.errors = {};
     showInsertModal.value = true;
 };
 
-const submitInsert = () => {
+const submitInsertRow = () => {
     insertForm.post(route('tables.row.store', {
         connection: props.selectedConnectionId,
         databaseName: props.selectedDatabaseName,
         tableName: props.selectedTableName,
+    }), { preserveScroll: true, onSuccess: () => closeModal() });
+};
+
+// --- Table Structure Actions ---
+const confirmDropTable = (tableName) => {
+    if (window.confirm(`ATENÇÃO: Tem certeza absoluta que deseja EXCLUIR a tabela '${tableName}'? Todos os dados serão perdidos para sempre.`)) {
+        router.delete(route('tables.destroy', {
+            connection: props.selectedConnectionId,
+            databaseName: props.selectedDatabaseName,
+            tableName: tableName,
+        }));
+    }
+};
+
+const showCreateTableModal = ref(false);
+const createTableForm = useForm({
+    name: '',
+    columns: [
+        { name: 'id', type: 'INT', length: '', nullable: false, ai: true, pk: true },
+        { name: '', type: 'VARCHAR', length: '255', nullable: true, ai: false, pk: false }
+    ]
+});
+
+const openCreateTableModal = () => {
+    createTableForm.reset();
+    createTableForm.columns = [
+        { name: 'id', type: 'INT', length: '', nullable: false, ai: true, pk: true },
+        { name: '', type: 'VARCHAR', length: '255', nullable: true, ai: false, pk: false }
+    ];
+    showCreateTableModal.value = true;
+};
+
+const addFormColumn = () => {
+    createTableForm.columns.push({ name: '', type: 'VARCHAR', length: '255', nullable: true, ai: false, pk: false });
+};
+
+const removeFormColumn = (index) => {
+    if (createTableForm.columns.length > 1) {
+        createTableForm.columns.splice(index, 1);
+    }
+};
+
+const submitCreateTable = () => {
+    createTableForm.post(route('tables.store', {
+        connection: props.selectedConnectionId,
+        databaseName: props.selectedDatabaseName,
     }), {
         preserveScroll: true,
         onSuccess: () => closeModal(),
     });
 };
 
-// --- Common Modal Logic ---
 const closeModal = () => {
     showEditModal.value = false;
     showInsertModal.value = false;
+    showCreateTableModal.value = false;
 };
 </script>
 
@@ -131,6 +168,7 @@ const closeModal = () => {
         </template>
 
         <div class="flex h-[calc(100vh-65px)]">
+
             <nav class="w-64 bg-white dark:bg-gray-800 border-r dark:border-gray-700 p-4 space-y-2 overflow-y-auto flex-shrink-0">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Minhas Conexões</h3>
                 <ul v-if="userConnections.length > 0">
@@ -149,7 +187,42 @@ const closeModal = () => {
                 </ul>
             </div>
 
-            <main class="flex-1 p-6 bg-gray-50 dark:bg-gray-900 overflow-y-auto">
+            <div class="w-72 bg-gray-50 dark:bg-gray-800 border-r dark:border-gray-700 p-4 overflow-y-auto flex-shrink-0">
+
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Tabelas</h3>
+                    <button v-if="selectedDatabaseName" @click="openCreateTableModal" class="p-1 text-blue-600 hover:bg-blue-100 rounded" title="Nova Tabela">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                    </button>
+                </div>
+
+                <ul class="space-y-1" v-if="tables.length > 0">
+                    <li v-for="table in tables" :key="table" class="group flex items-center justify-between">
+                        <Link
+                            :href="route('tables.data', { connection: selectedConnectionId, databaseName: selectedDatabaseName, tableName: table })"
+                            :class="{
+                                'bg-green-100 dark:bg-green-900 font-bold text-green-700 dark:text-green-300': table === selectedTableName,
+                                'block flex-1 p-2 rounded font-mono text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700': true
+                            }"
+                            preserve-scroll
+                        >
+                            {{ table }}
+                        </Link>
+                        <button @click="confirmDropTable(table)" class="hidden group-hover:block p-1 ml-1 text-red-500 hover:text-red-700" title="Excluir Tabela">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                            </svg>
+                        </button>
+                    </li>
+                </ul>
+                <p v-else-if="selectedDatabaseName && !connectionError" class="text-sm text-gray-500 dark:text-gray-400">
+                    Nenhuma tabela encontrada.
+                </p>
+            </div>
+
+            <main class="flex-1 p-6 bg-gray-100 dark:bg-gray-900 overflow-y-auto">
                 <div v-if="connectionError">
                     <h2 class="text-2xl font-bold text-red-600 dark:text-red-400">Erro</h2>
                     <pre class="mt-4 p-4 bg-gray-200 dark:bg-gray-800 rounded text-red-700 dark:text-red-300 overflow-x-auto">{{ connectionError }}</pre>
@@ -158,7 +231,7 @@ const closeModal = () => {
                 <div v-if="selectedDatabaseName && !connectionError">
                     <div class="mb-4 border-b border-gray-200 dark:border-gray-700">
                         <nav class="flex space-x-4" aria-label="Tabs">
-                            <Link :href="route('tables.index', { connection: selectedConnectionId, databaseName: selectedDatabaseName })" :class="[activeTab === 'tables' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700', 'whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm']">Tabelas</Link>
+                            <Link :href="route('tables.index', { connection: selectedConnectionId, databaseName: selectedDatabaseName })" :class="[activeTab === 'tables' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700', 'whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm']">Info</Link>
 
                             <Link v-if="selectedTableName" :href="route('tables.structure', { connection: selectedConnectionId, databaseName: selectedDatabaseName, tableName: selectedTableName })" :class="[activeTab === 'structure' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700', 'whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm']">Estrutura</Link>
                             <span v-else class="border-transparent text-gray-400 dark:text-gray-600 whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm cursor-not-allowed">Estrutura</span>
@@ -171,12 +244,8 @@ const closeModal = () => {
                     </div>
 
                     <div v-if="activeTab === 'tables'">
-                        <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Tabelas em <span class="text-blue-600 font-mono">{{ selectedDatabaseName }}</span></h2>
-                        <ul v-if="tables.length > 0" class="space-y-2">
-                            <li v-for="table in tables" :key="table">
-                                <Link :href="route('tables.data', { connection: selectedConnectionId, databaseName: selectedDatabaseName, tableName: table })" class="p-3 block bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-shadow"><span class="text-gray-800 dark:text-gray-200 font-mono">{{ table }}</span></Link>
-                            </li>
-                        </ul>
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Banco: <span class="text-blue-600 font-mono">{{ selectedDatabaseName }}</span></h2>
+                        <p class="text-gray-600 dark:text-gray-400">Selecione uma tabela na esquerda ou crie uma nova.</p>
                     </div>
 
                     <div v-if="activeTab === 'data'">
@@ -184,7 +253,6 @@ const closeModal = () => {
                             <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Mostrando dados de <span class="text-green-600 font-mono">{{ selectedTableName }}</span></h2>
                             <PrimaryButton @click="openInsertModal">Inserir Linha</PrimaryButton>
                         </div>
-
                         <div v-if="hasDataRows" class="w-full overflow-x-auto bg-white dark:bg-gray-800 shadow rounded-lg">
                             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                                 <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
@@ -198,7 +266,7 @@ const closeModal = () => {
                                     <td v-for="col in tableData.columns" :key="col" class="px-6 py-4 font-mono"><span :class="{'text-gray-400 italic': row[col] === null}">{{ truncate(row[col]) }}</span></td>
                                     <td v-if="tableData.primaryKeyColumns.length > 0" class="px-6 py-4 space-x-2 whitespace-nowrap">
                                         <SecondaryButton @click="openEditModal(row)">Editar</SecondaryButton>
-                                        <DangerButton @click="confirmDelete(row)">Deletar</DangerButton>
+                                        <DangerButton @click="confirmDeleteRow(row)">Deletar</DangerButton>
                                     </td>
                                 </tr>
                                 </tbody>
@@ -253,7 +321,7 @@ const closeModal = () => {
             </main>
 
             <Modal :show="showEditModal" @close="closeModal">
-                <form @submit.prevent="submitUpdate" class="p-6 dark:bg-gray-800">
+                <form @submit.prevent="submitUpdateRow" class="p-6 dark:bg-gray-800">
                     <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">Editando Linha</h2>
                     <div class="mt-6 max-h-[60vh] overflow-y-auto space-y-4 pr-2">
                         <div v-for="(value, column) in editForm.newRowData" :key="column">
@@ -271,30 +339,54 @@ const closeModal = () => {
             </Modal>
 
             <Modal :show="showInsertModal" @close="closeModal">
-                <form @submit.prevent="submitInsert" class="p-6 dark:bg-gray-800">
+                <form @submit.prevent="submitInsertRow" class="p-6 dark:bg-gray-800">
                     <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">Inserir Nova Linha</h2>
                     <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Deixe campos auto-increment vazios.</p>
-
                     <div class="mt-6 max-h-[60vh] overflow-y-auto space-y-4 pr-2">
                         <div v-for="(value, column) in insertForm.rowData" :key="column">
                             <InputLabel :for="'insert_'+column" :value="column" class="font-mono" />
-                            <TextInput
-                                :id="'insert_'+column"
-                                type="text"
-                                v-model="insertForm.rowData[column]"
-                                class="mt-1 block w-full font-mono text-sm"
-                                placeholder="NULL"
-                            />
+                            <TextInput :id="'insert_'+column" type="text" v-model="insertForm.rowData[column]" class="mt-1 block w-full font-mono text-sm" placeholder="NULL" />
                             <InputError :message="insertForm.errors[`rowData.${column}`]" class="mt-2" />
                         </div>
                     </div>
-
                     <div class="mt-6 flex justify-end gap-4">
                         <SecondaryButton @click="closeModal">Cancelar</SecondaryButton>
                         <PrimaryButton :disabled="insertForm.processing">Inserir Linha</PrimaryButton>
                     </div>
                 </form>
             </Modal>
+
+            <Modal :show="showCreateTableModal" @close="closeModal">
+                <form @submit.prevent="submitCreateTable" class="p-6 dark:bg-gray-800">
+                    <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Criar Nova Tabela</h2>
+                    <div class="mb-4">
+                        <InputLabel for="new_table_name" value="Nome da Tabela" />
+                        <TextInput id="new_table_name" type="text" v-model="createTableForm.name" class="mt-1 block w-full" required placeholder="ex: usuarios" />
+                        <InputError :message="createTableForm.errors.name" class="mt-2" />
+                    </div>
+                    <div class="mt-4 max-h-[50vh] overflow-y-auto pr-2">
+                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Colunas</h3>
+                        <div v-for="(col, index) in createTableForm.columns" :key="index" class="flex gap-2 mb-2 items-start">
+                            <div class="flex-1"><TextInput type="text" v-model="col.name" class="w-full text-xs" placeholder="Nome" required /></div>
+                            <div class="w-24">
+                                <select v-model="col.type" class="w-full text-xs border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-blue-500 dark:focus:ring-blue-600 rounded-md shadow-sm">
+                                    <option value="INT">INT</option><option value="VARCHAR">VARCHAR</option><option value="TEXT">TEXT</option><option value="DATE">DATE</option><option value="DATETIME">DATETIME</option><option value="BOOLEAN">BOOLEAN</option><option value="DECIMAL">DECIMAL</option>
+                                </select>
+                            </div>
+                            <div class="w-16"><TextInput type="text" v-model="col.length" class="w-full text-xs" placeholder="Len" /></div>
+                            <div class="flex items-center gap-1 pt-2">
+                                <label class="flex items-center text-xs"><input type="checkbox" v-model="col.pk" class="rounded border-gray-300 text-blue-600 shadow-sm" /> PK</label>
+                                <label class="flex items-center text-xs"><input type="checkbox" v-model="col.ai" class="rounded border-gray-300 text-blue-600 shadow-sm" /> AI</label>
+                                <label class="flex items-center text-xs"><input type="checkbox" v-model="col.nullable" class="rounded border-gray-300 text-blue-600 shadow-sm" /> Null</label>
+                            </div>
+                            <button type="button" @click="removeFormColumn(index)" class="text-red-500 hover:text-red-700 pt-1"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                        </div>
+                    </div>
+                    <div class="mt-2"><SecondaryButton type="button" @click="addFormColumn" class="text-xs">+ Adicionar Coluna</SecondaryButton></div>
+                    <div class="mt-6 flex justify-end gap-4"><SecondaryButton @click="closeModal">Cancelar</SecondaryButton><PrimaryButton :disabled="createTableForm.processing">Criar Tabela</PrimaryButton></div>
+                </form>
+            </Modal>
+
         </div>
     </AuthenticatedLayout>
 </template>
