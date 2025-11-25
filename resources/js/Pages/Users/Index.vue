@@ -136,15 +136,6 @@ const submitDelete = (user) => {
                         <InputError :message="form.errors.email" class="mt-2" />
                     </div>
                     <div>
-                        <InputLabel for="create_password" value="Senha" />
-                        <TextInput id="create_password" v-model="form.password" type="password" class="mt-1 block w-full" required />
-                        <InputError :message="form.errors.password" class="mt-2" />
-                    </div>
-                    <div>
-                        <InputLabel for="create_password_confirmation" value="Confirmar Senha" />
-                        <TextInput id="create_password_confirmation" v-model="form.password_confirmation" type="password" class="mt-1 block w-full" required />
-                    </div>
-                    <div>
                         <InputLabel for="create_role" value="Nível" />
                         <select id="create_role" v-model="form.role" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
                             <option value="Developer">Developer</option>

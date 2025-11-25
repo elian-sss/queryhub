@@ -109,4 +109,11 @@ Route::middleware(['auth', 'role:Administrator'])->group(function () {
     Route::resource('users', \App\Http\Controllers\UserController::class)->except(['show']);
 });
 
+// --- Rota para Forçar Mudança de Senha ---
+Route::middleware('auth')->group(function () {
+    Route::get('/password/change', [\App\Http\Controllers\PasswordChangeController::class, 'showChangeForm'])->name('password.change');
+    Route::post('/password/change', [\App\Http\Controllers\PasswordChangeController::class, 'updatePassword'])->name('password.updateFirst');
+});
+
+
 require __DIR__.'/auth.php';

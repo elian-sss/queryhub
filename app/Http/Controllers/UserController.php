@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\NewUserWelcome;
 
 class UserController extends Controller
 {
@@ -34,18 +37,23 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:'.User::class,
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'role' => ['required', Rule::in(['Administrator', 'Developer'])],
         ]);
 
-        User::create([
+        $tempPassword = Str::random(10);
+
+        $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'password' => Hash::make($tempPassword),
             'role' => $request->role,
+            'password_change_required' => true,
         ]);
 
-        return redirect()->route('users.index')->with('success', 'Usuário criado com sucesso.');
+        // Enviar email de boas-vindas
+        Mail::to($user->email)->send(new NewUserWelcome($user, $tempPassword));
+
+        return redirect()->route('users.index')->with('success', 'Usuário criado com sucesso. Um email com a senha temporária foi enviado.');
     }
 
     /**
