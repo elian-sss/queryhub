@@ -103,6 +103,27 @@ const submitInsertRow = () => {
     }), { preserveScroll: true, onSuccess: () => closeModal() });
 };
 
+// --- Import SQL Logic ---
+const showImportSqlModal = ref(false);
+const importSqlForm = useForm({
+    sql_file: null,
+});
+
+const openImportSqlModal = () => {
+    importSqlForm.reset();
+    showImportSqlModal.value = true;
+};
+
+const submitImportSql = () => {
+    importSqlForm.post(route('database.import', {
+        connection: props.selectedConnectionId,
+        databaseName: props.selectedDatabaseName,
+    }), {
+        preserveScroll: true,
+        onSuccess: () => closeModal(),
+    });
+};
+
 // --- Create Database Logic (NOVO) ---
 const showCreateDbModal = ref(false);
 const createDbForm = useForm({ name: '' });
@@ -175,6 +196,7 @@ const closeModal = () => {
     showInsertModal.value = false;
     showCreateTableModal.value = false;
     showCreateDbModal.value = false;
+    showImportSqlModal.value = false;
 };
 
 // --- Mobile View Logic ---
@@ -327,9 +349,15 @@ const toggleMobileView = (view) => { mobileView.value = view; };
                                 Banco: <span class="text-blue-600 font-mono">{{ selectedDatabaseName }}</span>
                             </h2>
 
-                            <a :href="route('database.export', { connection: selectedConnectionId, databaseName: selectedDatabaseName })" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-500 focus:bg-green-500 active:bg-green-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg> Exportar .SQL
-                            </a>
+                            <div class="flex items-center gap-2">
+                                <button @click="openImportSqlModal" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-500 focus:bg-indigo-500 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m6.75 12-3-3m0 0-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>
+                                    Importar .SQL
+                                </button>
+                                <a :href="route('database.export', { connection: selectedConnectionId, databaseName: selectedDatabaseName })" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-500 focus:bg-green-500 active:bg-green-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg> Exportar .SQL
+                                </a>
+                            </div>
                         </div>
                         <p class="text-gray-600 dark:text-gray-400">Selecione uma tabela no menu à esquerda ou crie uma nova.</p>
                     </div>
@@ -497,6 +525,30 @@ const toggleMobileView = (view) => { mobileView.value = view; };
                     <div class="mt-6 flex justify-end gap-4">
                         <SecondaryButton @click="closeModal">Cancelar</SecondaryButton>
                         <PrimaryButton :disabled="createDbForm.processing">Criar Banco</PrimaryButton>
+                    </div>
+                </form>
+            </Modal>
+
+            <Modal :show="showImportSqlModal" @close="closeModal">
+                <form @submit.prevent="submitImportSql" class="p-6 dark:bg-gray-800">
+                    <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">Importar Arquivo .SQL</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                        O arquivo será executado no banco: <strong class="font-mono text-blue-400">{{ selectedDatabaseName }}</strong>.
+                    </p>
+                    <div class="mb-4">
+                        <InputLabel for="sql_file" value="Arquivo .SQL" />
+                        <input id="sql_file" type="file" @input="importSqlForm.sql_file = $event.target.files[0]" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required />
+                        <progress v-if="importSqlForm.progress" :value="importSqlForm.progress.percentage" max="100" class="w-full mt-2">
+                            {{ importSqlForm.progress.percentage }}%
+                        </progress>
+                        <InputError :message="importSqlForm.errors.sql_file" class="mt-2" />
+                    </div>
+                    <div class="mt-6 flex justify-end gap-4">
+                        <SecondaryButton @click="closeModal">Cancelar</SecondaryButton>
+                        <PrimaryButton :class="{ 'opacity-25': importSqlForm.processing }" :disabled="importSqlForm.processing">
+                            <span v-if="importSqlForm.processing">Importando...</span>
+                            <span v-else>Importar</span>
+                        </PrimaryButton>
                     </div>
                 </form>
             </Modal>

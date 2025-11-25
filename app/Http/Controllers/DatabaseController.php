@@ -321,4 +321,46 @@ class DatabaseController extends Controller
             'Content-Type' => 'application/sql',
         ]);
     }
+
+    public function import(Request $request, Connection $connection, $databaseName)
+    {
+        $request->validate([
+            'sql_file' => 'required|file|extensions:sql|max:102400', // Max 100MB
+        ]);
+
+        $db = null;
+        try {
+            $db = $this->setupDynamicConnection($connection, $databaseName);
+
+            // Desativa a checagem de chaves estrangeiras para evitar erros de ordem
+            $db->statement('SET FOREIGN_KEY_CHECKS=0;');
+
+            // Pega o conteúdo do arquivo e executa como uma query não preparada
+            $sql = $request->file('sql_file')->get();
+            $db->unprepared($sql);
+
+            // Reativa a checagem
+            $db->statement('SET FOREIGN_KEY_CHECKS=1;');
+
+            return Redirect::back()->with('success', 'Arquivo SQL importado e executado com sucesso!');
+
+        } catch (\Exception $e) {
+            Log::error("Falha na importação de SQL: " . $e->getMessage());
+
+            // Tenta reativar as chaves estrangeiras mesmo em caso de erro
+            if ($db) {
+                try {
+                    $db->statement('SET FOREIGN_KEY_CHECKS=1;');
+                } catch (\Exception $ex) {
+                    Log::error("Não foi possível reativar FOREIGN_KEY_CHECKS: " . $ex->getMessage());
+                }
+            }
+
+            return Redirect::back()->with('error', 'Erro ao importar arquivo: ' . $e->getMessage());
+        } finally {
+            if ($db) {
+                DB::disconnect($db->getName());
+            }
+        }
+    }
 }

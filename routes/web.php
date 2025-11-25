@@ -62,6 +62,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/connections/{connection}/databases', [DatabaseController::class, 'index'])
         ->name('databases.index');
 
+    Route::get('/connections/{connection}/databases/{databaseName}/export', [DatabaseController::class, 'export'])
+        ->name('database.export');
+    Route::post('/connections/{connection}/databases', [DatabaseController::class, 'store'])
+        ->name('databases.store');
+    Route::post('/connections/{connection}/databases/{databaseName}/import', [DatabaseController::class, 'import'])
+        ->name('database.import');
+
     Route::get('/connections/{connection}/databases/{databaseName}/tables', [TableController::class, 'index'])
         ->name('tables.index');
     Route::get('/connections/{connection}/databases/{databaseName}/sql', [DatabaseController::class, 'showSql'])
