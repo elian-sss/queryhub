@@ -17,11 +17,9 @@ class ForcePasswordChange
     public function handle(Request $request, Closure $next): Response
     {
         if (Auth::check() && Auth::user()->password_change_required) {
-            // Permite o acesso à página de mudança de senha e ao logout
             if ($request->routeIs('password.change') || $request->routeIs('password.updateFirst') || $request->routeIs('logout')) {
                 return $next($request);
             }
-            // Redireciona todas as outras requisições para a página de mudança de senha
             return redirect()->route('password.change');
         }
 

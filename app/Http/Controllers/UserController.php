@@ -50,7 +50,7 @@ class UserController extends Controller
             'password_change_required' => true,
         ]);
 
-        // Enviar email de boas-vindas
+
         Mail::to($user->email)->send(new NewUserWelcome($user, $tempPassword));
 
         return redirect()->route('users.index')->with('success', 'Usuário criado com sucesso. Um email com a senha temporária foi enviado.');
@@ -86,7 +86,7 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
-        // Prevent users from deleting themselves
+
         if ($user->id === auth()->id()) {
             return redirect()->route('users.index')->with('error', 'Você não pode excluir a si mesmo.');
         }

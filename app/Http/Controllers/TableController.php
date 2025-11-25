@@ -38,7 +38,7 @@ class TableController extends Controller
             'engine' => null,
         ]);
 
-        // Limpa a conexão antiga para forçar a leitura da nova config
+
         DB::purge($dynamicConnectionName);
 
         return DB::connection($dynamicConnectionName);
@@ -52,35 +52,35 @@ class TableController extends Controller
         $db_layout = null;
         $databases = [];
         try {
-            // Conecta SEM banco
+
             $db_layout = $this->setupDynamicConnection($connection);
             $results = $db_layout->select('SHOW DATABASES');
             $excludedDbs = ['information_schema', 'mysql', 'performance_schema', 'sys'];
 
-            // 1. Pega TODOS os bancos da conexão
+
             $allDatabases = collect($results)
                 ->map(fn($db) => $db->Database)
                 ->filter(fn($dbName) => !in_array($dbName, $excludedDbs))
                 ->values();
 
-            // 2. Pega as permissões ESPECÍFICAS do usuário
+
             $allowedDatabases = \App\Models\DatabasePermission::where('user_id', Auth::id())
                 ->where('connection_id', $connection->id)
-                ->pluck('database_name'); // Pega só os nomes
+                ->pluck('database_name');
 
-            // 3. Lógica de Filtro
+
             if (Auth::user()->role === 'Administrator') {
-                // 3.1. Admins veem tudo
+
                 $databases = $allDatabases->all();
             } else {
-                // 3.2. Para Developers, checar se há permissões específicas
+
                 if ($allowedDatabases->isEmpty()) {
-                    // 3.3. Nenhuma permissão específica? Mostra TODOS os bancos
+
                     $databases = $allDatabases->all();
                 } else {
-                    // 3.4. Tem permissões? Filtra a lista
+
                     $databases = $allDatabases->filter(fn($dbName) => $allowedDatabases->contains($dbName))
-                        ->values() // <-- ESTA É A CORREÇÃO
+                        ->values()
                         ->all();
                 }
             }
@@ -96,7 +96,7 @@ class TableController extends Controller
 
         return [
             'userConnections' => $userConnections,
-            'databases' => $databases, // A lista agora está filtrada
+            'databases' => $databases,
             'selectedConnectionId' => $connection->id,
         ];
     }
@@ -113,14 +113,14 @@ class TableController extends Controller
         $db = null;
 
         try {
-            // --- PASSO 1: Pegar Tabelas (Conexão COM banco) ---
+
             $db = $this->setupDynamicConnection($connection, $databaseName);
             $results = $db->select('SHOW TABLES');
             $key = 'Tables_in_' . $databaseName;
             $tables = collect($results)->map(fn($t) => $t->$key)->values()->all();
 
-            // --- PASSO 2: Pegar Layout Data (Conexão SEM banco) ---
-            // Isso é feito por último para não sobrescrever a config da conexão $db
+
+
             $layoutData = $this->getLayoutData($connection);
 
         } catch (\Exception $e) {
@@ -156,15 +156,15 @@ class TableController extends Controller
         $db = null;
 
         try {
-            // --- PASSO 1: Pegar Tabelas e Dados (Conexão COM banco) ---
+
             $db = $this->setupDynamicConnection($connection, $databaseName);
 
-            // 1a. Pegar tabelas (para a 3ª coluna)
+
             $results = $db->select('SHOW TABLES');
             $key = 'Tables_in_' . $databaseName;
             $tables = collect($results)->map(fn($t) => $t->$key)->values()->all();
 
-            // 1b. Pega dados da tabela (colunas e linhas)
+
             $columnsQuery = $db->select("SHOW COLUMNS FROM `{$tableName}`");
             $tableData['columns'] = collect($columnsQuery)->pluck('Field')->all();
 
@@ -175,7 +175,7 @@ class TableController extends Controller
             $tableData['rowsPaginator'] = $db->table($tableName)->paginate($perPage)
                 ->withQueryString();
 
-            // --- PASSO 2: Pegar Layout Data (Conexão SEM banco) ---
+
             $layoutData = $this->getLayoutData($connection);
 
         } catch (\Exception $e) {
@@ -199,25 +199,25 @@ class TableController extends Controller
     public function showStructure(Request $request, Connection $connection, $databaseName, $tableName)
     {
         $tables = [];
-        $tableStructure = []; // Prop para os dados da estrutura
+        $tableStructure = [];
         $error = null;
         $layoutData = [];
         $db = null;
 
         try {
-            // --- PASSO 1: Conectar COM o banco ---
+
             $db = $this->setupDynamicConnection($connection, $databaseName);
 
-            // 1a. Pegar tabelas (para a 3ª coluna)
+
             $results = $db->select('SHOW TABLES');
             $key = 'Tables_in_' . $databaseName;
             $tables = collect($results)->map(fn($t) => $t->$key)->values()->all();
 
-            // 1b. Pega a ESTRUTURA da tabela (A NOVA LÓGICA)
-            // SHOW COLUMNS retorna: Field, Type, Null, Key, Default, Extra
+
+
             $tableStructure = $db->select("SHOW COLUMNS FROM `{$tableName}`");
 
-            // --- PASSO 2: Pegar Layout Data (Conexão SEM banco) ---
+
             $layoutData = $this->getLayoutData($connection);
 
         } catch (\Exception $e) {
@@ -232,18 +232,18 @@ class TableController extends Controller
             'selectedDatabaseName' => $databaseName,
             'tables' => $tables,
             'selectedTableName' => $tableName,
-            'tableStructure' => $tableStructure, // <-- Passa a estrutura
+            'tableStructure' => $tableStructure,
             'connectionError' => $error,
-            'activeTab' => 'structure', // <-- Define a aba ativa
+            'activeTab' => 'structure',
         ]);
     }
 
     public function updateRow(Request $request, Connection $connection, $databaseName, $tableName)
     {
-        // Pega os dados validados
+
         $validated = $request->validate([
-            'newRowData' => 'required|array', // Os dados do formulário (o que o usuário digitou)
-            'originalPkValues' => 'required|array', // Os valores originais da PK (para o WHERE)
+            'newRowData' => 'required|array',
+            'originalPkValues' => 'required|array',
         ]);
 
         $newRowData = $validated['newRowData'];
@@ -251,32 +251,32 @@ class TableController extends Controller
 
         $db = null;
         try {
-            // --- PASSO 1: Conectar COM o banco ---
+
             $db = $this->setupDynamicConnection($connection, $databaseName);
 
-            // --- PASSO 2: Validar a Chave Primária ---
+
             if (empty($originalPkValues)) {
                 return Redirect::back()->with('error', 'Esta tabela não tem chave primária. Não é possível editar a linha.');
             }
 
-            // --- PASSO 3: Construir e Executar o UPDATE ---
-            // O Query Builder lida com a segurança (bindings)
-            // 1. Inicia a query
+
+
+
             $query = $db->table($tableName);
 
-            // 2. Constrói a cláusula WHERE dinamicamente
+
             foreach ($originalPkValues as $column => $value) {
                 $query->where($column, $value);
             }
 
-            // 3. Executa o UPDATE com os novos dados
+
             $affectedRows = $query->update($newRowData);
 
             return Redirect::back()->with('success', "$affectedRows linha(s) atualizada(s).");
 
         } catch (\Exception $e) {
             Log::error('Falha ao atualizar linha: ' . $e->getMessage());
-            // Tenta extrair uma mensagem de erro mais amigável
+
             $sqlMessage = $e->errorInfo[2] ?? $e->getMessage();
             return Redirect::back()->with('error', 'Falha ao atualizar: ' . substr($sqlMessage, 0, 200));
         } finally {
@@ -287,15 +287,15 @@ class TableController extends Controller
     public function storeRow(Request $request, Connection $connection, $databaseName, $tableName)
     {
         $validated = $request->validate([
-            'rowData' => 'required|array', // Os dados para inserir
+            'rowData' => 'required|array',
         ]);
 
-        // Filtra chaves nulas ou vazias que podem causar erro em campos auto-increment
-        // (Opcional: dependendo de como o frontend envia, podemos precisar limpar)
+
+
         $rowData = $validated['rowData'];
 
-        // Remove campos vazios se forem strings vazias para permitir que o banco use DEFAULT ou NULL
-        // (Isso é uma heurística simples, pode precisar de ajuste dependendo do tipo da coluna)
+
+
         foreach ($rowData as $key => $value) {
             if ($value === '') {
                 $rowData[$key] = null;
@@ -306,7 +306,7 @@ class TableController extends Controller
         try {
             $db = $this->setupDynamicConnection($connection, $databaseName);
 
-            // Executa o INSERT
+
             $result = $db->table($tableName)->insert($rowData);
 
             if ($result) {
@@ -326,7 +326,7 @@ class TableController extends Controller
 
     public function destroyRow(Request $request, Connection $connection, $databaseName, $tableName)
     {
-        // Pega a linha inteira que o frontend enviou
+
         $row = $request->input('row');
         if (!$row) {
             return Redirect::back()->with('error', 'Nenhum dado de linha recebido.');
@@ -334,10 +334,10 @@ class TableController extends Controller
 
         $db = null;
         try {
-            // --- PASSO 1: Conectar COM o banco ---
+
             $db = $this->setupDynamicConnection($connection, $databaseName);
 
-            // --- PASSO 2: Pegar a Chave Primária (de novo, por segurança) ---
+
             $pkResults = $db->select("SHOW KEYS FROM `{$tableName}` WHERE Key_name = 'PRIMARY'");
             $primaryKeyColumns = collect($pkResults)->pluck('Column_name')->all();
 
@@ -345,7 +345,7 @@ class TableController extends Controller
                 return Redirect::back()->with('error', 'Esta tabela não tem chave primária. Não é possível deletar a linha.');
             }
 
-            // --- PASSO 3: Construir a Cláusula WHERE dinâmica ---
+
             $whereClauses = [];
             foreach ($primaryKeyColumns as $pkColumn) {
                 if (!isset($row[$pkColumn])) {
@@ -354,9 +354,9 @@ class TableController extends Controller
                 $whereClauses[$pkColumn] = $row[$pkColumn];
             }
 
-            // --- PASSO 4: Executar o DELETE ---
-            // Usamos o Query Builder com o array de WHEREs,
-            // o que nos protege de SQL Injection.
+
+
+
             $affectedRows = $db->table($tableName)->where($whereClauses)->delete();
 
             if ($affectedRows > 0) {
@@ -376,14 +376,14 @@ class TableController extends Controller
     public function store(Request $request, Connection $connection, $databaseName)
     {
         $data = $request->validate([
-            'name' => 'required|string|max:64|regex:/^[a-zA-Z0-9_]+$/', // Validação de nome seguro
+            'name' => 'required|string|max:64|regex:/^[a-zA-Z0-9_]+$/',
             'columns' => 'required|array|min:1',
             'columns.*.name' => 'required|string|max:64|regex:/^[a-zA-Z0-9_]+$/',
             'columns.*.type' => 'required|string',
             'columns.*.length' => 'nullable|string',
             'columns.*.nullable' => 'boolean',
-            'columns.*.ai' => 'boolean', // Auto Increment
-            'columns.*.pk' => 'boolean', // Primary Key
+            'columns.*.ai' => 'boolean',
+            'columns.*.pk' => 'boolean',
         ]);
 
         $tableName = $data['name'];
@@ -393,27 +393,27 @@ class TableController extends Controller
         try {
             $db = $this->setupDynamicConnection($connection, $databaseName);
 
-            // Construção do SQL CREATE TABLE
+
             $sqlDefinitions = [];
             $primaryKeys = [];
 
             foreach ($columns as $col) {
                 $def = "`{$col['name']}` {$col['type']}";
 
-                // Adiciona tamanho se necessário (ex: VARCHAR(255))
+
                 if (!empty($col['length']) && !in_array(strtoupper($col['type']), ['TEXT', 'DATE', 'DATETIME', 'BOOLEAN'])) {
                     $def .= "({$col['length']})";
                 }
 
-                // Nullable?
+
                 $def .= $col['nullable'] ? " NULL" : " NOT NULL";
 
-                // Auto Increment?
+
                 if ($col['ai']) {
                     $def .= " AUTO_INCREMENT";
                 }
 
-                // É chave primária?
+
                 if ($col['pk']) {
                     $primaryKeys[] = "`{$col['name']}`";
                 }
@@ -421,7 +421,7 @@ class TableController extends Controller
                 $sqlDefinitions[] = $def;
             }
 
-            // Adiciona a definição de chave primária no final
+
             if (!empty($primaryKeys)) {
                 $sqlDefinitions[] = "PRIMARY KEY (" . implode(', ', $primaryKeys) . ")";
             }
@@ -429,7 +429,7 @@ class TableController extends Controller
             $sqlBody = implode(', ', $sqlDefinitions);
             $sql = "CREATE TABLE `{$tableName}` ({$sqlBody}) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
 
-            // Executa
+
             $db->statement($sql);
 
             return Redirect::back()->with('success', "Tabela '{$tableName}' criada com sucesso.");
@@ -452,11 +452,11 @@ class TableController extends Controller
         try {
             $db = $this->setupDynamicConnection($connection, $databaseName);
 
-            // DROP TABLE simples
+
             $db->statement("DROP TABLE `{$tableName}`");
 
-            // Se a tabela excluída era a que estava sendo visualizada, limpa a seleção
-            // O frontend lidará com o redirecionamento se necessário
+
+
             return Redirect::route('tables.index', [
                 'connection' => $connection->id,
                 'databaseName' => $databaseName

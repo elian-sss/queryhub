@@ -52,35 +52,34 @@ class DatabaseController extends Controller
         $db_layout = null;
         $databases = [];
         try {
-            // Conecta SEM banco
+
             $db_layout = $this->setupDynamicConnection($connection);
             $results = $db_layout->select('SHOW DATABASES');
             $excludedDbs = ['information_schema', 'mysql', 'performance_schema', 'sys'];
 
-            // 1. Pega TODOS os bancos da conexão
+
             $allDatabases = collect($results)
                 ->map(fn($db) => $db->Database)
                 ->filter(fn($dbName) => !in_array($dbName, $excludedDbs))
                 ->values();
 
-            // 2. Pega as permissões ESPECÍFICAS do usuário
             $allowedDatabases = \App\Models\DatabasePermission::where('user_id', Auth::id())
                 ->where('connection_id', $connection->id)
-                ->pluck('database_name'); // Pega só os nomes
+                ->pluck('database_name');
 
-            // 3. Lógica de Filtro
+
             if (Auth::user()->role === 'Administrator') {
-                // 3.1. Admins veem tudo
+
                 $databases = $allDatabases->all();
             } else {
-                // 3.2. Para Developers, checar se há permissões específicas
+
                 if ($allowedDatabases->isEmpty()) {
-                    // 3.3. Nenhuma permissão específica? Mostra TODOS os bancos
+
                     $databases = $allDatabases->all();
                 } else {
-                    // 3.4. Tem permissões? Filtra a lista
+
                     $databases = $allDatabases->filter(fn($dbName) => $allowedDatabases->contains($dbName))
-                        ->values() // <-- ESTA É A CORREÇÃO
+                        ->values()
                         ->all();
                 }
             }
@@ -96,7 +95,7 @@ class DatabaseController extends Controller
 
         return [
             'userConnections' => $userConnections,
-            'databases' => $databases, // A lista agora está filtrada
+            'databases' => $databases,
             'selectedConnectionId' => $connection->id,
         ];
     }
@@ -111,7 +110,7 @@ class DatabaseController extends Controller
 
         return Inertia::render('Dashboard', [
             ...$layoutData,
-            'activeTab' => 'tables', // 'tables' é a aba padrão
+            'activeTab' => 'tables',
         ]);
     }
 
@@ -152,8 +151,8 @@ class DatabaseController extends Controller
             Str::startsWith(strtoupper(trim($sql)), 'SHOW');
 
         if ($isSelectQuery) {
-            // --- BLOCO DO SELECT / SHOW ---
-            // Este bloco renderiza a si mesmo, não redireciona.
+
+
 
             $sqlResults = null;
             $error = null;
@@ -166,7 +165,7 @@ class DatabaseController extends Controller
             } catch (\Exception $e) {
                 Log::error('Falha na query SQL (SELECT): ' . $e->getMessage());
                 $error = 'Falha ao executar query: ' . $e->getMessage();
-                // Se falhar, ainda tenta pegar o layout
+
                 if (empty($layoutData)) {
                     try { $layoutData = $this->getLayoutData($connection); } catch (\Exception $e2) {}
                 }
@@ -174,7 +173,7 @@ class DatabaseController extends Controller
                 if ($db) DB::disconnect($db->getName());
             }
 
-            // Renderiza a página com resultados ou erro (sem redirect)
+
             return Inertia::render('Dashboard', [
                 ...$layoutData,
                 'selectedDatabaseName' => $databaseName,
@@ -186,14 +185,14 @@ class DatabaseController extends Controller
             ]);
 
         } else {
-            // --- BLOCO DO UPDATE/INSERT/DELETE ---
-            // Este bloco SEMPRE redireciona, com sucesso ou erro.
+
+
 
             try {
                 $db = $this->setupDynamicConnection($connection, $databaseName);
                 $sqlAffectedRows = $db->affectingStatement($sql);
 
-                // SUCESSO: Redireciona para a aba SQL com notificação de sucesso
+
                 return Redirect::route('database.showSql', [
                     'connection' => $connection->id,
                     'databaseName' => $databaseName,
@@ -202,7 +201,7 @@ class DatabaseController extends Controller
             } catch (\Exception $e) {
                 Log::error('Falha na query SQL (AFFECTING): ' . $e->getMessage());
 
-                // ERRO: Redireciona para a aba SQL com notificação de erro
+
                 return Redirect::route('database.showSql', [
                     'connection' => $connection->id,
                     'databaseName' => $databaseName,
@@ -220,7 +219,7 @@ class DatabaseController extends Controller
         $error = null;
 
         try {
-            // Pega os dados do layout (lista de bancos e conexões)
+
             $layoutData = $this->getLayoutData($connection);
         } catch (\Exception $e) {
             Log::error('Falha na conexão (showSql): ' . $e->getMessage());
@@ -231,14 +230,14 @@ class DatabaseController extends Controller
             ...$layoutData,
             'selectedDatabaseName' => $databaseName,
             'connectionError' => $error,
-            'activeTab' => 'sql', // Diz ao frontend para abrir a aba SQL
+            'activeTab' => 'sql',
         ]);
     }
 
     public function export(Connection $connection, $databaseName)
     {
-        // Configura a conexão dinamicamente (sem conectar ainda)
-        // Precisamos setar a config aqui para que ela exista dentro do callback do stream
+
+
         $dynamicConnectionName = 'dynamic_db_' . $connection->id;
         Config::set('database.connections.' . $dynamicConnectionName, [
             'driver' => 'mysql',
@@ -259,36 +258,36 @@ class DatabaseController extends Controller
         return response()->streamDownload(function () use ($dynamicConnectionName) {
             $db = DB::connection($dynamicConnectionName);
 
-            // Cabeçalho do Arquivo
+
             echo "-- QueryHub Dump\n";
-            echo "-- Banco de Dados: `$dynamicConnectionName`\n"; // O nome real está na config
+            echo "-- Banco de Dados: `$dynamicConnectionName`\n";
             echo "-- Data: " . date('Y-m-d H:i:s') . "\n\n";
             echo "SET FOREIGN_KEY_CHECKS=0;\n";
             echo "SET SQL_MODE = \"NO_AUTO_VALUE_ON_ZERO\";\n\n";
 
-            // 1. Pegar todas as tabelas
+
             $tables = $db->select('SHOW TABLES');
-            // O nome da chave muda dependendo do nome do banco (ex: Tables_in_mydb)
+
             $keyName = array_key_first((array)$tables[0]);
 
             foreach ($tables as $tableObj) {
                 $table = $tableObj->$keyName;
 
-                // 2. Estrutura (CREATE TABLE)
+
                 echo "-- Estrutura para tabela `$table`\n";
                 echo "DROP TABLE IF EXISTS `$table`;\n";
 
                 $createTable = $db->select("SHOW CREATE TABLE `$table`");
-                // O resultado vem como [Table => 'nome', Create Table => 'sql']
-                // Mas as chaves podem variar case, então pegamos o segundo valor do array
+
+
                 $createTableSql = array_values((array)$createTable[0])[1];
 
                 echo $createTableSql . ";\n\n";
 
-                // 3. Dados (INSERT INTO)
+
                 echo "-- Despejando dados para a tabela `$table`\n";
 
-                // Usamos cursor() para não carregar tudo na memória
+
                 $rows = $db->table($table)->cursor();
 
                 foreach ($rows as $row) {
@@ -299,9 +298,9 @@ class DatabaseController extends Controller
                         } elseif (is_numeric($value)) {
                             $values[] = $value;
                         } else {
-                            // Escapa aspas simples e barras invertidas
+
                             $val = str_replace(["\\", "'"], ["\\\\", "\\'"], $value);
-                            // Corrige quebras de linha para SQL
+
                             $val = str_replace(["\r\n", "\n", "\r"], ["\\r\\n", "\\n", "\\r"], $val);
                             $values[] = "'$val'";
                         }
@@ -325,21 +324,21 @@ class DatabaseController extends Controller
     public function import(Request $request, Connection $connection, $databaseName)
     {
         $request->validate([
-            'sql_file' => 'required|file|extensions:sql|max:102400', // Max 100MB
+            'sql_file' => 'required|file|extensions:sql|max:102400',
         ]);
 
         $db = null;
         try {
             $db = $this->setupDynamicConnection($connection, $databaseName);
 
-            // Desativa a checagem de chaves estrangeiras para evitar erros de ordem
+
             $db->statement('SET FOREIGN_KEY_CHECKS=0;');
 
-            // Pega o conteúdo do arquivo e executa como uma query não preparada
+
             $sql = $request->file('sql_file')->get();
             $db->unprepared($sql);
 
-            // Reativa a checagem
+
             $db->statement('SET FOREIGN_KEY_CHECKS=1;');
 
             return Redirect::back()->with('success', 'Arquivo SQL importado e executado com sucesso!');
@@ -347,7 +346,7 @@ class DatabaseController extends Controller
         } catch (\Exception $e) {
             Log::error("Falha na importação de SQL: " . $e->getMessage());
 
-            // Tenta reativar as chaves estrangeiras mesmo em caso de erro
+
             if ($db) {
                 try {
                     $db->statement('SET FOREIGN_KEY_CHECKS=1;');

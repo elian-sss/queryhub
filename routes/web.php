@@ -54,7 +54,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/connections/{connection}/users/{user}/db-permissions', [DatabasePermissionController::class, 'edit'])
             ->name('connections.users.db-permissions.edit');
 
-        // Rota POST para salvar as permissões
         Route::post('/connections/{connection}/users/{user}/db-permissions', [DatabasePermissionController::class, 'update'])
             ->name('connections.users.db-permissions.update');
 

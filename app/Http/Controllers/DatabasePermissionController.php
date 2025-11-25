@@ -15,7 +15,7 @@ class DatabasePermissionController extends Controller
 {
     private function setupDynamicConnection(Connection $connection, $databaseName = null)
     {
-        // Segurança: O admin (usuário logado) pode gerenciar esta conexão?
+
         if (!Auth::user()->connections->contains($connection)) {
             abort(403, 'Acesso não autorizado a esta conexão.');
         }
@@ -51,7 +51,7 @@ class DatabasePermissionController extends Controller
         $allowedDatabases = [];
 
         try {
-            // 1. Conecta SEM banco para pegar a lista de todos os bancos
+
             $db_layout = $this->setupDynamicConnection($connection);
             $results = $db_layout->select('SHOW DATABASES');
             $excludedDbs = ['information_schema', 'mysql', 'performance_schema', 'sys'];
@@ -61,7 +61,7 @@ class DatabasePermissionController extends Controller
                 ->values()
                 ->all();
 
-            // 2. Busca as permissões que o usuário JÁ TEM
+
             $allowedDatabases = DatabasePermission::where('user_id', $user->id)
                 ->where('connection_id', $connection->id)
                 ->pluck('database_name')
@@ -74,7 +74,7 @@ class DatabasePermissionController extends Controller
             if ($db_layout) DB::disconnect($db_layout->getName());
         }
 
-        // Retorna os dados como JSON para o modal
+
         return response()->json([
             'allDatabases' => $allDatabases,
             'allowedDatabases' => $allowedDatabases,
@@ -95,12 +95,12 @@ class DatabasePermissionController extends Controller
 
         try {
             DB::transaction(function () use ($user, $connection, $allowedDbs) {
-                // 1. Limpa todas as permissões de banco antigas para este usuário/conexão
+
                 DatabasePermission::where('user_id', $user->id)
                     ->where('connection_id', $connection->id)
                     ->delete();
 
-                // 2. Cria os dados para inserção em massa
+
                 $permissionsToInsert = [];
                 $now = now();
                 foreach ($allowedDbs as $dbName) {
@@ -113,7 +113,7 @@ class DatabasePermissionController extends Controller
                     ];
                 }
 
-                // 3. Insere as novas permissões
+
                 if (!empty($permissionsToInsert)) {
                     DatabasePermission::insert($permissionsToInsert);
                 }

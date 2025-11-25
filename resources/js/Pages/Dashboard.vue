@@ -10,7 +10,6 @@ import TextInput from '@/Components/TextInput.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
 
-// --- Props ---
 const props = defineProps({
     userConnections: Array,
     selectedConnectionId: { type: Number, default: null },
@@ -30,7 +29,6 @@ const props = defineProps({
     sqlAffectedRows: { type: Number, default: null },
 });
 
-// --- Helpers ---
 const truncate = (value, length = 50) => {
     if (value === null) return 'NULL';
     let str = String(value);
@@ -38,7 +36,6 @@ const truncate = (value, length = 50) => {
     return str;
 };
 
-// --- SQL ---
 const sqlForm = useForm({ query: props.sqlQuery || 'SELECT * FROM ' });
 const submitSql = () => {
     sqlForm.post(route('database.executeSql', {
@@ -47,7 +44,6 @@ const submitSql = () => {
     }), { preserveState: false, preserveScroll: true });
 };
 
-// --- Row Actions ---
 const hasDataRows = computed(() => props.tableData.rowsPaginator && props.tableData.rowsPaginator.data.length > 0);
 const hasSqlResults = computed(() => props.sqlResults && props.sqlResults.length > 0);
 const sqlResultColumns = computed(() => hasSqlResults.value ? Object.keys(props.sqlResults[0]) : []);
@@ -62,7 +58,6 @@ const confirmDeleteRow = (row) => {
     }
 };
 
-// --- Edit Row Logic ---
 const showEditModal = ref(false);
 const editForm = useForm({ newRowData: {}, originalPkValues: {} });
 
@@ -83,7 +78,6 @@ const submitUpdateRow = () => {
     }), { preserveScroll: true, onSuccess: () => closeModal() });
 };
 
-// --- Insert Row Logic ---
 const showInsertModal = ref(false);
 const insertForm = useForm({ rowData: {} });
 
@@ -103,7 +97,6 @@ const submitInsertRow = () => {
     }), { preserveScroll: true, onSuccess: () => closeModal() });
 };
 
-// --- Import SQL Logic ---
 const showImportSqlModal = ref(false);
 const importSqlForm = useForm({
     sql_file: null,
@@ -124,7 +117,6 @@ const submitImportSql = () => {
     });
 };
 
-// --- Create Database Logic (NOVO) ---
 const showCreateDbModal = ref(false);
 const createDbForm = useForm({ name: '' });
 
@@ -142,7 +134,6 @@ const submitCreateDb = () => {
     });
 };
 
-// --- Table Structure Actions ---
 const confirmDropTable = (tableName) => {
     if (window.confirm(`ATENÇÃO: Tem certeza absoluta que deseja EXCLUIR a tabela '${tableName}'? Todos os dados serão perdidos para sempre.`)) {
         router.delete(route('tables.destroy', {
@@ -199,7 +190,6 @@ const closeModal = () => {
     showImportSqlModal.value = false;
 };
 
-// --- Mobile View Logic ---
 const mobileView = ref(props.selectedTableName || props.activeTab === 'sql' ? 'content' : 'nav');
 const toggleMobileView = (view) => { mobileView.value = view; };
 </script>

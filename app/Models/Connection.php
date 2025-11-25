@@ -19,10 +19,6 @@ class Connection extends Model
         'database_password_encrypted',
     ];
 
-    /**
-     * Criptografa a senha ao definir o atributo.
-     * Acessaremos como $connection->database_password = 'senha_pura'
-     */
     protected function databasePassword(): Attribute
     {
         return Attribute::make(

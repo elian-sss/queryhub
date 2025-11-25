@@ -5,22 +5,22 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import Checkbox from '@/Components/Checkbox.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
-import Modal from '@/Components/Modal.vue'; // <-- 1. Importar Modal
+import Modal from '@/Components/Modal.vue';
 import {Head, useForm} from '@inertiajs/vue3';
-import {ref} from 'vue'; // <-- 2. Importar ref
-import axios from 'axios'; // <-- 3. Importar axios
+import {ref} from 'vue';
+import axios from 'axios';
 import { useToast } from 'vue-toastification';
 
 const toast = useToast();
 
-// --- Props (sem mudança) ---
+
 const props = defineProps({
     connection: Object,
     allUsers: Array,
     assignedUserIds: Array,
 });
 
-// --- Formulário Principal (sem mudança) ---
+
 const form = useForm({
     user_ids: props.assignedUserIds,
 });
@@ -32,19 +32,18 @@ const submit = () => {
 };
 
 
-// --- NOVA LÓGICA DO MODAL DE PERMISSÃO DE BANCO ---
 const showDbModal = ref(false);
 const isLoadingModal = ref(false);
 const selectedUser = ref(null);
 const allDatabases = ref([]);
 const dbPermissionError = ref(null);
 
-// Formulário separado para o modal
+
 const dbPermissionForm = useForm({
     allowed_databases: [],
 });
 
-// 1. Função para fechar o modal e resetar o estado
+
 const closeModal = () => {
     showDbModal.value = false;
     isLoadingModal.value = false;
@@ -54,9 +53,9 @@ const closeModal = () => {
     dbPermissionForm.reset();
 };
 
-// 2. Função chamada pelo botão "Gerenciar Bancos" (AGORA É ASYNC)
+
 const manageDbPermissions = async (user) => {
-    // Seta o estado inicial do modal
+
     selectedUser.value = user;
     isLoadingModal.value = true;
     showDbModal.value = true;
@@ -64,13 +63,13 @@ const manageDbPermissions = async (user) => {
     dbPermissionForm.reset();
 
     try {
-        // Chama nossa nova rota de API via axios
+
         const response = await axios.get(route('connections.users.db-permissions.edit', {
             connection: props.connection.id,
             user: user.id
         }));
 
-        // Preenche os dados do modal com a resposta
+
         allDatabases.value = response.data.allDatabases;
         dbPermissionForm.allowed_databases = response.data.allowedDatabases;
 
@@ -82,7 +81,7 @@ const manageDbPermissions = async (user) => {
     }
 };
 
-// 3. Função chamada pelo botão "Salvar" do modal
+
 const submitDbPermissions = () => {
     dbPermissionForm.processing = true;
     dbPermissionError.value = null;
@@ -95,7 +94,7 @@ const submitDbPermissions = () => {
     })
         .then(response => {
             closeModal();
-            // --- 4. CHAMAR O TOAST MANUALMENTE ---
+
             toast.success('Permissões de banco atualizadas!');
         })
         .catch(error => {
