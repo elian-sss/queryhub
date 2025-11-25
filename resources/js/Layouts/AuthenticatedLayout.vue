@@ -56,6 +56,13 @@ router.on('finish', () => {
                                     :active="route().current('connections.index')">
                                     Conexões
                                 </NavLink>
+
+                                <NavLink
+                                    v-if="$page.props.auth.user.role === 'Administrator'"
+                                    :href="route('users.index')"
+                                    :active="route().current('users.index')">
+                                    Usuários
+                                </NavLink>
                             </div>
                         </div>
 
@@ -145,6 +152,13 @@ router.on('finish', () => {
                             :href="route('connections.index')"
                             :active="route().current('connections.index')">
                             Conexões
+                        </ResponsiveNavLink>
+
+                        <ResponsiveNavLink
+                            v-if="$page.props.auth.user.role === 'Administrator'"
+                            :href="route('users.index')"
+                            :active="route().current('users.index')">
+                            Usuários
                         </ResponsiveNavLink>
                     </div>
 

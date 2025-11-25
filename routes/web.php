@@ -44,6 +44,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // Connections
     Route::middleware('role:Administrator')->group(function () {
         Route::get('/connections', [ConnectionController::class, 'index'])->name('connections.index');
         Route::post('/connections', [ConnectionController::class, 'store'])->name('connections.store');
@@ -101,6 +102,11 @@ Route::middleware('auth')->group(function () {
             ->name('connections.permissions.edit');
     Route::patch('/connections/{connection}/permissions', [ConnectionPermissionController::class, 'update'])
             ->name('connections.permissions.update');
+});
+
+// --- Rotas de Administrador ---
+Route::middleware(['auth', 'role:Administrator'])->group(function () {
+    Route::resource('users', \App\Http\Controllers\UserController::class)->except(['show']);
 });
 
 require __DIR__.'/auth.php';
