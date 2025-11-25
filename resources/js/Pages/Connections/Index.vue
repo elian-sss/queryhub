@@ -138,12 +138,12 @@ const confirmDeletion = (connection) => {
                             <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">Conexões Salvas</h2>
                         </header>
                         <div v-if="connections.length > 0" class="mt-4 space-y-4">
-                            <div v-for="conn in connections" :key="conn.id" class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                            <div v-for="conn in connections" :key="conn.id" class="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
                                 <div>
                                     <span class="font-semibold text-gray-900 dark:text-gray-100">{{ conn.name }}</span>
                                     <span class="text-sm text-gray-600 dark:text-gray-400 block">{{ conn.database_user }}@{{ conn.host }}:{{ conn.port }}</span>
                                 </div>
-                                <div class="space-x-2 flex-shrink-0">
+                                <div class="space-x-2 flex-shrink-0 mt-3 sm:mt-0">
                                     <Link 
                                         :href="route('connections.permissions.edit', conn.id)"
                                         as="button"

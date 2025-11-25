@@ -130,7 +130,7 @@ const submitDbPermissions = () => {
                         <div class="mt-6 space-y-4">
                             <div v-for="user in allUsers" :key="user.id">
                                 <div v-if="user.role === 'Developer'"
-                                     class="flex items-center justify-between p-3 border dark:border-gray-700 rounded-lg">
+                                     class="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 border dark:border-gray-700 rounded-lg">
                                     <label class="flex items-center cursor-pointer">
                                         <Checkbox
                                             v-model:checked="form.user_ids"
@@ -145,7 +145,7 @@ const submitDbPermissions = () => {
                                                 }})</span>
                                         </div>
                                     </label>
-                                    <div>
+                                    <div class="mt-3 sm:mt-0">
                                         <SecondaryButton
                                             @click.prevent="manageDbPermissions(user)"
                                             title="Gerenciar permissões de banco de dados"
@@ -154,16 +154,18 @@ const submitDbPermissions = () => {
                                         </SecondaryButton>
                                     </div>
                                 </div>
-                                <div v-else class="flex items-center p-3 border dark:border-gray-700 rounded-lg bg-gray-100 dark:bg-gray-900 opacity-60">
-                                    <Checkbox :checked="true" :disabled="true" />
-                                    <span class="ms-3 text-sm text-gray-800 dark:text-gray-200">{{ user.name }}</span>
-                                    <span class="ms-2 text-xs text-gray-500 dark:text-gray-400">({{ user.email }} - Admin)</span>
+                                <div v-else class="flex flex-col sm:flex-row sm:items-center p-3 border dark:border-gray-700 rounded-lg bg-gray-100 dark:bg-gray-900 opacity-60">
+                                    <div class="flex items-center">
+                                        <Checkbox :checked="true" :disabled="true" />
+                                        <span class="ms-3 text-sm text-gray-800 dark:text-gray-200">{{ user.name }}</span>
+                                        <span class="ms-2 text-xs text-gray-500 dark:text-gray-400">({{ user.email }} - Admin)</span>
+                                    </div>
                                 </div>
                             </div>
                             <InputError :message="form.errors.user_ids" class="mt-2"/>
                         </div>
 
-                        <div class="flex items-center gap-4 mt-6">
+                        <div class="flex flex-col sm:flex-row items-center gap-4 mt-6">
                             <PrimaryButton :disabled="form.processing">Salvar Permissões</PrimaryButton>
                         </div>
                     </form>
@@ -202,7 +204,7 @@ const submitDbPermissions = () => {
                         </p>
                     </div>
 
-                    <div class="mt-6 flex justify-end gap-4">
+                    <div class="mt-6 flex flex-col sm:flex-row justify-end gap-4">
                         <SecondaryButton @click="closeModal"> Cancelar</SecondaryButton>
                         <PrimaryButton :disabled="dbPermissionForm.processing">
                             Salvar Permissões do Banco
