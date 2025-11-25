@@ -87,6 +87,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/connections/{connection}/databases/{databaseName}/export', [DatabaseController::class, 'export'])
         ->name('database.export');
 
+    Route::post('/connections/{connection}/databases', [DatabaseController::class, 'store'])
+        ->name('databases.store');
+
     Route::get('/connections/{connection}/permissions', [ConnectionPermissionController::class, 'edit'])
             ->name('connections.permissions.edit');
     Route::patch('/connections/{connection}/permissions', [ConnectionPermissionController::class, 'update'])

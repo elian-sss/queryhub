@@ -115,6 +115,29 @@ class DatabaseController extends Controller
         ]);
     }
 
+    public function store(Request $request, Connection $connection)
+    {
+        $request->validate([
+            'name' => ['required', 'string', 'max:64', 'regex:/^[a-zA-Z0-9_]+$/'],
+        ]);
+
+        $dbName = $request->input('name');
+        $db = null;
+
+        try {
+            $db = $this->setupDynamicConnection($connection);
+            $db->statement("CREATE DATABASE `{$dbName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
+
+            return Redirect::back()->with('success', "Banco de dados '{$dbName}' criado com sucesso.");
+
+        } catch (\Exception $e) {
+            Log::error('Falha ao criar banco de dados: ' . $e->getMessage());
+            return Redirect::back()->with('error', 'Erro ao criar banco: ' . $e->getMessage());
+        } finally {
+            if ($db) DB::disconnect($db->getName());
+        }
+    }
+
     /**
      * Executa uma consulta SQL manual no banco de dados.
      * (MÉTODO CORRIGIDO)
