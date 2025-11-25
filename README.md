@@ -1,101 +1,213 @@
 # QueryHub
 
-QueryHub é um gerenciador de banco de dados moderno e seguro, baseado na web, construído com Laravel 10 e Vue.js. Ele serve como uma alternativa a ferramentas como o phpMyAdmin, fornecendo uma interface limpa para desenvolvedores interagirem com bancos de dados MySQL/MariaDB.
+QueryHub é um gerenciador de banco de dados baseado na web, construído com Laravel 10 e Vue 3 (Inertia). Ele facilita o gerenciamento e a inspeção de bancos MySQL/MariaDB e adiciona controles de acesso por papéis.
 
-O diferencial do QueryHub é seu sistema de permissões, onde um Administrador central controla quais usuários (Developers) podem acessar quais conexões de banco de dados.
+**Este README foi atualizado para incluir instruções de setup, informações sobre as funcionalidades recentes (importação .sql e gerenciamento de usuários) e notas de configuração de e-mail.**
 
-## Funcionalidades (Estado Atual)
+## Funcionalidades Principais
 
-* **Autenticação de Usuários:** Sistema completo de login e registro (via Laravel Breeze).
-* **Papéis de Usuário:** Diferenciação entre `Administrator` e `Developer`.
-* **Gerenciamento de Conexões (CRUD Admin):**
-    * Administradores podem criar, listar, atualizar e deletar conexões com bancos de dados externos.
-    * As senhas das conexões são armazenadas de forma segura (criptografadas).
-* **Atribuição Automática para Admins:** Novas conexões são automaticamente atribuídas a todos os usuários `Administrator` existentes.
-* **Navegador de Banco de Dados (Dashboard):**
-    * Layout de 4 colunas: Conexões \> Bancos \> Tabelas \> Dados.
-    * Lista apenas as conexões permitidas para o usuário logado.
-    * Lista os bancos de dados de uma conexão selecionada.
-    * Lista as tabelas de um banco de dados selecionado.
-    * Exibe os dados de uma tabela selecionada com paginação (100 registros por página).
+- Autenticação de usuários via Laravel Breeze.
+- Papéis: `Administrator` e `Developer` (controle de acesso por conexão).
+- Gerenciamento de conexões (CRUD) por Administradores.
+- Dashboard com navegação: Conexões → Bancos → Tabelas → Dados.
+- Importação de arquivos `.sql` via Dashboard (executa SQL bruto no banco selecionado).
+- Exportação de esquema e dados (dump simples) a partir do Dashboard.
+- Gerenciamento de usuários (somente `Administrator`): criar/editar/remover.
+- Criação automática de senha temporária ao criar um novo usuário; e-mail de boas-vindas enviado e obrigatoriedade de troca de senha no primeiro login.
 
-## Stack de Tecnologia
+## Avisos Importantes
 
-* **Backend:** PHP 8.2, Laravel 10
-* **Frontend:** Vue.js 3, Inertia.js
-* **Estilização:** Tailwind CSS 3 (com suporte a Light/Dark Mode)
-* **Autenticação:** Laravel Breeze (VILT Stack)
-* **Banco de Dados (Aplicação):** MySQL / MariaDB
-* **Bancos de Dados (Gerenciados):** MySQL / MariaDB
+- A funcionalidade de importação executa SQL bruto (`unprepared`) no banco de dados selecionado. Use com cautela e apenas em ambientes confiáveis.
+- Configure backups regulares antes de permitir importações em produção.
+- O envio de e-mail (boas-vindas, reset de senha) depende das variáveis de `MAIL_*` no `.env` (ex.: SMTP do Gmail com App Password).
 
 ---
 
-## Instalação e Configuração Local
+## Pré-requisitos
 
-Siga estes passos para rodar o QueryHub em sua máquina local.
+- PHP 8.2
+- Composer
+- Node.js (v18+) e NPM
+- MySQL / MariaDB
 
-### 1. Pré-requisitos
+---
 
-* **PHP 8.2** (exatamente)
-* **Composer**
-* **Node.js** (v18+) e **NPM**
-* Um servidor de banco de dados **MySQL** ou **MariaDB**
+## Passos de Instalação (local)
 
-### 2. Instalação (Método Rápido)
+### Método Rápido (Recomendado com setup.php)
 
-Este método usa um script PHP para automatizar a maior parte da configuração.
+1. Clone o repositório:
 
-1.  **Clonar o Repositório**
-    ```bash
-    git clone https://github.com/elian-sss/queryhub queryhub
-    cd queryhub
-    ```
+```powershell
+git clone https://github.com/elian-sss/queryhub queryhub
+cd queryhub
+```
 
-2.  **Instalar Dependências do PHP (Obrigatório)**
-    O script de setup precisa dos pacotes do Composer para rodar.
-    ```bash
-    composer install
-    ```
+2. Instale as dependências:
 
-3.  **Configurar Arquivo de Ambiente (Obrigatório)**
-    Copie o arquivo de exemplo.
-    ```bash
-    cp .env.example .env
-    ```
+```powershell
+composer install
+npm install
+```
 
-4.  **EDITAR O `.env` (Obrigatório)**
-    Abra o arquivo `.env` que você acabou de criar e **configure suas credenciais de banco de dados**:
-    ```dotenv
-    DB_CONNECTION=mysql
-    DB_HOST=127.0.0.1
-    DB_PORT=3306
-    DB_DATABASE=queryhub_app
-    DB_USERNAME=root
-    DB_PASSWORD=             # Sua senha do banco
-    ```
+3. Copie o arquivo `.env`:
 
-5.  **Executar o Script de Setup**
-    Este comando fará o resto: gerar a `APP_KEY`, criar o banco, rodar as migrações e criar o usuário admin.
-    ```bash
-    php setup.php
-    ```
+```powershell
+copy .env.example .env
+```
 
-6.  **Instalar Dependências do Node.js**
-    ```bash
-    npm install
-    ```
+4. **Edite o `.env`** e configure pelo menos:
 
-7.  **Rodar os Servidores de Desenvolvimento**
-    * Terminal 1: `npm run dev`
-    * Terminal 2: `php artisan serve`
+```dotenv
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=queryhub_app
+DB_USERNAME=root
+DB_PASSWORD=
+```
 
-8.  **Pronto!** Você pode fazer login diretamente com:
-    * **Usuário:** `admin@admin.com`
-    * **Senha:** `password`
+5. **Execute o script de setup** (faz tudo automaticamente):
 
-## Uso Básico (Pós-Instalação)
+```powershell
+php setup.php
+```
 
-1.  **Login:** Faça login com o usuário Admin.
-2.  **Criar Conexão:** No menu de navegação, clique em **Conexões**.
-3.  **Formulário:** Preencha o formulário para adicionar uma nova conexão de teste.
-4.  **Acessar o Dashboard:** Clique em **Dashboard**. A nova conexão aparecerá automaticamente.
+Este script fará:
+- Gerar a chave da aplicação (`APP_KEY`)
+- Criar o banco de dados (se não existir)
+- Executar todas as migrações (incluindo `password_change_required`)
+- Popular o banco com o admin inicial
+
+6. Compile os assets e rodando o servidor:
+
+```powershell
+npm run dev
+php artisan serve
+```
+
+7. Acesse http://127.0.0.1:8000 e faça login:
+   - **Email:** `admin@admin.com`
+   - **Senha:** `password`
+
+---
+
+### Método Manual (sem setup.php)
+
+Se preferir fazer manualmente, siga os passos abaixo:
+
+1. Clone e configure como acima (passos 1-4).
+
+2. Gere a chave manualmente:
+
+```powershell
+php artisan key:generate
+php artisan migrate
+```
+
+3. Crie um admin via tinker:
+
+```powershell
+php artisan tinker
+>>> \App\Models\User::create(['name' => 'Admin', 'email' => 'admin@admin.com', 'password' => bcrypt('password'), 'role' => 'Administrator', 'password_change_required' => false]);
+>>> exit
+```
+
+4. Continue com os assets e servidor (passo 6 acima).
+
+---
+
+### Configurar SMTP (e-mail)
+
+Adicione ao seu `.env` as variáveis de e-mail. Exemplo usando Gmail:
+
+```dotenv
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=seu.email@gmail.com
+MAIL_PASSWORD=seu_app_password_aqui
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=seu.email@gmail.com
+MAIL_FROM_NAME="QueryHub"
+```
+
+**Para usar Gmail:**
+1. Ative a autenticação de 2 fatores na sua conta Google.
+2. Gere um "App Password" em https://myaccount.google.com/apppasswords
+3. Use esse app password no `.env` em `MAIL_PASSWORD`.
+
+**Para testes locais (sem e-mail real):**
+Configure `MAIL_MAILER=log` para gravar os e-mails nos logs da aplicação (`storage/logs/`).
+
+---
+
+## Notas sobre usuários e e-mail
+
+- Quando um Administrador cria um novo usuário, o sistema gera uma senha temporária e envia um e-mail de boas-vindas com as credenciais.
+- No primeiro login com essa senha temporária o sistema força a troca de senha (`password_change_required`).
+- Para que os e-mails sejam enviados corretamente, configure as variáveis `MAIL_*` no `.env` e verifique se o servidor SMTP permite o envio (no caso do Gmail, um App Password).
+
+---
+
+## Importação de arquivos .sql
+
+- A tela do Dashboard permite enviar um arquivo `.sql` para ser executado no banco de dados selecionado.
+- Validação do upload aceita arquivos com extensão `.sql`.
+- O SQL é executado diretamente no banco (com `FOREIGN_KEY_CHECKS` temporariamente desabilitado durante a execução). Faça backup antes de usar esta funcionalidade em produção.
+
+---
+
+## Seeders e criação de Admin inicial
+
+O `setup.php` já cria o admin inicial automaticamente. Se desejar criar mais usuários admin via console:
+
+```powershell
+php artisan tinker
+>>> \App\Models\User::create(['name' => 'Admin', 'email' => 'admin@admin.com', 'password' => bcrypt('password'), 'role' => 'Administrator', 'password_change_required' => false]);
+>>> exit
+```
+
+Ou via interface gráfica: após logar como admin, vá para o menu **Usuários** e crie novos usuários. O sistema gerará uma senha temporária automaticamente e enviará um e-mail de boas-vindas.
+
+---
+
+## Testes e Verificações Locais
+
+- Verifique migrações:
+
+```powershell
+php artisan migrate:status
+```
+
+- Para testar envio de e-mail localmente sem SMTP, considere usar `mailtrap.io` ou configurar `MAIL_MAILER=log` para gravar e-mails nos logs.
+
+---
+
+## Boas Práticas e Segurança
+
+- Não conceda privilégios de importação a usuários não confiáveis.
+- Mantenha backups das bases antes de executar imports.
+- Se for usar em produção, considere colocar o serviço de e-mail em fila (jobs) para não bloquear requisições.
+
+---
+
+## Próximos Passos / Sugestões
+
+- Adicionar testes automatizados para fluxos de autenticação e importação.
+- Implementar fila para envio de e-mails (Redis/Database + Laravel Queue).
+- Adicionar logs e auditoria para importações de SQL.
+
+---
+
+## Contribuição
+
+Sinta-se à vontade para abrir issues e pull requests. Consulte as guidelines do projeto antes de enviar alterações maiores.
+
+---
+
+## Contato
+
+Desenvolvedor: Elian
+
+

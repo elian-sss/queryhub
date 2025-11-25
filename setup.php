@@ -1,14 +1,26 @@
 <?php
 
 /**
- * Script de Configuração do Banco de Dados para QueryHub
+ * Script de Configuração do QueryHub
  *
  * Este script automatiza a configuração inicial do banco de dados.
- * 1. Verifica se .env existe (criado manualmente).
- * 2. Verifica se APP_KEY existe (e a gera se necessário).
- * 3. Cria o banco de dados MySQL se ele não existir.
- * 4. Executa as migrações (limpando o banco).
- * 5. Popula o banco com dados (criando o usuário Admin).
+ * Ele realiza os seguintes passos:
+ *
+ * 1. Verifica se .env existe (deve ser criado manualmente).
+ * 2. Verifica/gera a chave da aplicação (APP_KEY).
+ * 3. Valida credenciais de banco de dados.
+ * 4. Cria o banco de dados MySQL com charset utf8mb4 (se não existir).
+ * 5. Executa as migrações (limpa e cria todas as tabelas, incluindo password_change_required).
+ * 6. Executa os seeders (popula dados iniciais: admin, etc.).
+ *
+ * Uso:
+ *   php setup.php
+ *
+ * Pré-requisitos:
+ *   - PHP 8.2+
+ *   - Composer (dependencies já instaladas)
+ *   - .env configurado com credenciais de banco de dados
+ *   - MySQL/MariaDB rodando
  */
 
 // Define o caminho base como o diretório onde o script está
