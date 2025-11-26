@@ -190,13 +190,13 @@ class DatabaseController extends Controller
 
             try {
                 $db = $this->setupDynamicConnection($connection, $databaseName);
-                $sqlAffectedRows = $db->affectingStatement($sql);
+                $db->unprepared($sql);
 
 
                 return Redirect::route('database.showSql', [
                     'connection' => $connection->id,
                     'databaseName' => $databaseName,
-                ])->with('success', "$sqlAffectedRows linhas afetadas.");
+                ])->with('success', "Script SQL executado com sucesso.");
 
             } catch (\Exception $e) {
                 Log::error('Falha na query SQL (AFFECTING): ' . $e->getMessage());
