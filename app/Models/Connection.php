@@ -16,28 +16,35 @@ class Connection extends Model
         'host',
         'port',
         'database_user',
+        'database_password',
+    ];
+
+    protected $hidden = [
         'database_password_encrypted',
     ];
 
     protected function databasePassword(): Attribute
     {
         return Attribute::make(
-            get: function (?string $value) {
-                if ($value === null) {
+            get: function ($value, $attributes) {
+                if (empty($attributes['database_password_encrypted'])) {
                     return null;
                 }
                 try {
-                    return Crypt::decryptString($value);
+                    return Crypt::decryptString($attributes['database_password_encrypted']);
                 } catch (\Exception $e) {
                     return null;
                 }
             },
-            set: function (?string $value) {
-                if ($value === null || $value === '') {
-                    return null;
+
+            set: function ($value) {
+                if (empty($value)) {
+                    return ['database_password_encrypted' => null];
                 }
-                return Crypt::encryptString($value);
-            },
+                return [
+                    'database_password_encrypted' => Crypt::encryptString($value)
+                ];
+            }
         );
     }
 
@@ -53,18 +60,8 @@ class Connection extends Model
     protected static function boot()
     {
         parent::boot();
-        $attribute_handler = function ($model) {
-            if (array_key_exists('database_password', $model->attributes)) {
-                $model->attributes['database_password_encrypted'] = $model->database_password;
-                unset($model->attributes['database_password']);
-            }
-        };
-
-        static::creating($attribute_handler);
-        static::updating($attribute_handler);
 
         static::created(function ($connection) {
-
             $adminUserIds = User::where('role', 'Administrator')->pluck('id');
 
             if ($adminUserIds->isNotEmpty()) {
