@@ -1,7 +1,6 @@
 <script setup>
 import { ref } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
@@ -29,38 +28,43 @@ router.on('finish', () => {
 
 <template>
     <div>
-        <div class="min-h-screen bg-gray-100 dark:bg-gray-900">
-            <nav class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+        <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+            <nav class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
                 <!-- Primary Navigation Menu -->
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="flex justify-between h-16">
                         <div class="flex">
                             <!-- Logo -->
                             <div class="shrink-0 flex items-center">
-                                <Link :href="route('dashboard')">
-                                    <ApplicationLogo
-                                        class="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200"
-                                    />
+                                <Link :href="route('dashboard')" class="flex items-center gap-2 group">
+                                    <div class="w-8 h-8 bg-indigo-600 dark:bg-indigo-500 rounded-lg flex items-center justify-center group-hover:bg-indigo-700 transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-white">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.566.034-1.08.16-1.539.325m-6.4 1.319m6.4 1.319c.554.307.996.742 1.255 1.265m6.4-1.32a48.453 48.453 0 0 1 3.423 6.024m-6.4 1.319c-.554-.307-.996-.742-1.255-1.265m0 0a48.694 48.694 0 0 0-1.255 1.265" />
+                                        </svg>
+                                    </div>
+                                    <span class="text-lg font-bold text-gray-900 dark:text-white hidden sm:inline">QueryHub</span>
                                 </Link>
                             </div>
 
                             <!-- Navigation Links -->
-                            <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                <NavLink :href="route('dashboard')" :active="route().current('dashboard')">
+                            <div class="hidden space-x-1 sm:-my-px sm:ms-10 sm:flex">
+                                <NavLink :href="route('dashboard')" :active="route().current('dashboard')" class="px-3 py-2 rounded-md text-sm font-medium">
                                     Dashboard
                                 </NavLink>
 
                                 <NavLink
                                     v-if="$page.props.auth.user.role === 'Administrator'"
                                     :href="route('connections.index')"
-                                    :active="route().current('connections.index')">
+                                    :active="route().current('connections.index')"
+                                    class="px-3 py-2 rounded-md text-sm font-medium">
                                     Conexões
                                 </NavLink>
 
                                 <NavLink
                                     v-if="$page.props.auth.user.role === 'Administrator'"
                                     :href="route('users.index')"
-                                    :active="route().current('users.index')">
+                                    :active="route().current('users.index')"
+                                    class="px-3 py-2 rounded-md text-sm font-medium">
                                     Usuários
                                 </NavLink>
                             </div>
@@ -74,7 +78,7 @@ router.on('finish', () => {
                                         <span class="inline-flex rounded-md">
                                             <button
                                                 type="button"
-                                                class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none transition ease-in-out duration-150"
+                                                class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none transition ease-in-out duration-150"
                                             >
                                                 {{ $page.props.auth.user.name }}
 
@@ -140,7 +144,7 @@ router.on('finish', () => {
                 <!-- Responsive Navigation Menu -->
                 <div
                     :class="{ block: showingNavigationDropdown, hidden: !showingNavigationDropdown }"
-                    class="sm:hidden"
+                    class="sm:hidden border-t border-gray-200 dark:border-gray-700"
                 >
                     <div class="pt-2 pb-3 space-y-1">
                         <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">
@@ -163,12 +167,12 @@ router.on('finish', () => {
                     </div>
 
                     <!-- Responsive Settings Options -->
-                    <div class="pt-4 pb-1 border-t border-gray-200 dark:border-gray-600">
+                    <div class="pt-4 pb-1 border-t border-gray-200 dark:border-gray-700">
                         <div class="px-4">
-                            <div class="font-medium text-base text-gray-800 dark:text-gray-200">
+                            <div class="font-medium text-base text-gray-900 dark:text-white">
                                 {{ $page.props.auth.user.name }}
                             </div>
-                            <div class="font-medium text-sm text-gray-500">{{ $page.props.auth.user.email }}</div>
+                            <div class="font-medium text-sm text-gray-500 dark:text-gray-400">{{ $page.props.auth.user.email }}</div>
                         </div>
 
                         <div class="mt-3 space-y-1">
@@ -182,7 +186,7 @@ router.on('finish', () => {
             </nav>
 
             <!-- Page Heading -->
-            <header class="bg-white dark:bg-gray-800 shadow" v-if="$slots.header">
+            <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700" v-if="$slots.header">
                 <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                     <slot name="header" />
                 </div>

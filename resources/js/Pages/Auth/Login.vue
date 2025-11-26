@@ -33,62 +33,64 @@ const submit = () => {
     <GuestLayout>
         <Head title="Entrar" />
 
-        <div v-if="status" class="mb-4 font-medium text-sm text-green-600">
+        <div v-if="status" class="mb-4 p-3 font-medium text-sm text-green-700 bg-green-50 dark:text-green-200 dark:bg-green-900/20 rounded-md border border-green-200 dark:border-green-800">
             {{ status }}
         </div>
 
-        <form @submit.prevent="submit">
+        <div class="mb-6 text-center">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Bem-vindo</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Faça login para acessar o QueryHub</p>
+        </div>
+
+        <form @submit.prevent="submit" class="space-y-4">
             <div>
                 <InputLabel for="email" value="Email" />
-
                 <TextInput
                     id="email"
                     type="email"
-                    class="mt-1 block w-full"
+                    class="mt-2 block w-full"
                     v-model="form.email"
                     required
                     autofocus
                     autocomplete="username"
+                    placeholder="seu@email.com"
                 />
-
                 <InputError class="mt-2" :message="form.errors.email" />
             </div>
 
-            <div class="mt-4">
+            <div>
                 <InputLabel for="password" value="Senha" />
-
                 <TextInput
                     id="password"
                     type="password"
-                    class="mt-1 block w-full"
+                    class="mt-2 block w-full"
                     v-model="form.password"
                     required
                     autocomplete="current-password"
+                    placeholder="••••••••"
                 />
-
                 <InputError class="mt-2" :message="form.errors.password" />
             </div>
 
-            <div class="block mt-4">
+            <div class="flex items-center justify-between">
                 <label class="flex items-center">
                     <Checkbox name="remember" v-model:checked="form.remember" />
                     <span class="ms-2 text-sm text-gray-600 dark:text-gray-400">Lembrar-me</span>
                 </label>
-            </div>
 
-            <div class="flex items-center justify-end mt-4">
                 <Link
                     v-if="canResetPassword"
                     :href="route('password.request')"
-                    class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800"
+                    class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 underline rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800"
                 >
                     Esqueceu sua senha?
                 </Link>
-
-                <PrimaryButton class="ms-4" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                    Entrar
-                </PrimaryButton>
             </div>
+
+            <PrimaryButton class="w-full justify-center mt-6" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
+                <span v-if="form.processing">Entrando...</span>
+                <span v-else>Entrar</span>
+            </PrimaryButton>
         </form>
     </GuestLayout>
 </template>
